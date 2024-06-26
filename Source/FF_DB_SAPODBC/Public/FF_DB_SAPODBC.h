@@ -12,13 +12,5 @@ public:
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
 
-#ifdef _WIN64
-	
-	FString Dir_ThirdParty;
-
 	void* Handle_SAP_ODBC = nullptr;
-	virtual void Loader_SAP_ODBC();
-	virtual void Release_SAP_ODBC();
-
-#endif
 };

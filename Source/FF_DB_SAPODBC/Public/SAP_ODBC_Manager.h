@@ -5,6 +5,9 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 
+#include "SAP_ODBC_Thread.h"
+#include "SAP_ODBC_Connection.h"
+
 #include "SAP_ODBC_Manager.generated.h"
 
 UCLASS()
@@ -20,6 +23,8 @@ protected:
 	// Called when the game end or when destroyed.
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
+	odbc::EnvironmentRef SAP_ODBC_Environment;
+
 public:	
 	
 	// Sets default values for this actor's properties.
@@ -27,5 +32,14 @@ public:
 
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+
+	UFUNCTION(BlueprintCallable)
+	virtual bool SAP_ODBC_Init_Environment();
+
+	UFUNCTION(BlueprintCallable)
+	virtual bool SAP_ODBC_Create_Connection(FString& Out_Code, USAP_ODBC_Connection*& CreatedConnection, FString In_Server, FString In_UserName, FString In_Password, bool bUseAutoCommit);
+
+	UPROPERTY(BlueprintReadOnly)
+	TMap<FString, USAP_ODBC_Connection*> MAP_Connections;
 
 };
