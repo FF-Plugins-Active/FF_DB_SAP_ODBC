@@ -229,6 +229,11 @@ void USAP_ODBC_Statement::ExecuteQuery(FString& Out_Code, USAP_ODBC_Result*& Out
 
 // RESULT.
 
+bool USAP_ODBC_Result::GetMetaData(FString& Out_Code)
+{
+	odbc::ResultSetMetaDataRef MetaData = this->QueryResultPtr->get()->getMetaData();
+}
+
 bool USAP_ODBC_Result::GetString(FString& Out_Code, FString& Out_String, int32 ColumnIndex)
 {
 	if (!this->QueryResultPtr.IsValid())

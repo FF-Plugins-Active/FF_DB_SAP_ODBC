@@ -2,13 +2,8 @@
 
 #include "CoreMinimal.h"
 
-THIRD_PARTY_INCLUDES_START
-#include "odbc/Connection.h"
-#include "odbc/Environment.h"
-#include "odbc/Exception.h"
-#include "odbc/PreparedStatement.h"
-#include "odbc/ResultSet.h"
-THIRD_PARTY_INCLUDES_END
+// Custom Includes.
+#include "SAP_ODBC_Includes.h"
 
 #include "SAP_ODBC_Connection.generated.h"
 
@@ -73,6 +68,9 @@ class FF_DB_SAPODBC_API USAP_ODBC_Result : public UObject
 public:
 
 	TSharedPtr<odbc::ResultSetRef> QueryResultPtr;
+
+	UFUNCTION(BlueprintCallable)
+	virtual bool GetMetaData(FString& Out_Code);
 
 	UFUNCTION(BlueprintCallable)
 	virtual bool GetString(FString& Out_Code, FString& Out_String, int32 ColumnIndex = 1);
