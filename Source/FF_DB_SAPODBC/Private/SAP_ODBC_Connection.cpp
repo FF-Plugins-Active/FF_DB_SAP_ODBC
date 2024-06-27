@@ -194,18 +194,65 @@ bool USAP_ODBC_Statement::CommitStatement(FString& Out_Code)
 	return true;
 }
 
+void USAP_ODBC_Statement::ExecuteQuery(FString& Out_Code, USAP_ODBC_Result*& Out_Result)
+{
+	if (!this->StatementPtr.IsValid())
+	{
+		return;
+	}
+
+	if (this->StatementPtr->isNull())
+	{
+		return;
+	}
+
+	odbc::ResultSetRef QueryResult;
+
+	try
+	{
+		QueryResult = this->StatementPtr->get()->executeQuery();
+	}
+
+	catch (const std::exception& Exception)
+	{
+		Out_Code = Exception.what();
+	}
+
+	if (QueryResult.isNull())
+	{
+		return;
+	}
+
+	Out_Result = NewObject<USAP_ODBC_Result>();
+	Out_Result->QueryResultPtr = MakeShared<odbc::ResultSetRef>(QueryResult);
+}
+
 // RESULT.
 
 bool USAP_ODBC_Result::GetString(FString& Out_Code, FString& Out_String, int32 ColumnIndex)
 {
-	if (this->QueryResult.isNull())
+	if (!this->QueryResultPtr.IsValid())
 	{
-		Out_Code = "Query is NULL !";
 		return false;
 	}
 
-	//this->QueryResult->
+	if (this->QueryResultPtr->isNull())
+	{
+		return false;
+	}
 
-	//Out_String =  ? "" : this->QueryResult->getString(1)->c_str();
+	try
+	{
+		while (this->QueryResultPtr->get()->next())
+		{
+			Out_String = this->QueryResultPtr->get()->getString(ColumnIndex)->c_str();
+		}	
+	}
+
+	catch (const std::exception& Exception)
+	{
+		Out_Code = Exception.what();
+	}
+
 	return true;
 }

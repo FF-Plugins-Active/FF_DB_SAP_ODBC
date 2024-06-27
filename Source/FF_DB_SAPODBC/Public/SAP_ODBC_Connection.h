@@ -60,6 +60,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	virtual bool CommitStatement(FString& Out_Code);
 
+	UFUNCTION(BlueprintCallable)
+	virtual void ExecuteQuery(FString& Out_Code, USAP_ODBC_Result*& Out_Result);
+
 };
 
 UCLASS(BlueprintType)
@@ -69,9 +72,9 @@ class FF_DB_SAPODBC_API USAP_ODBC_Result : public UObject
 
 public:
 
-	odbc::ResultSetRef QueryResult = nullptr;
+	TSharedPtr<odbc::ResultSetRef> QueryResultPtr;
 
 	UFUNCTION(BlueprintCallable)
-	virtual bool GetString(FString& Out_Code, FString& Out_String, int32 ColumnIndex);
+	virtual bool GetString(FString& Out_Code, FString& Out_String, int32 ColumnIndex = 1);
 
 };

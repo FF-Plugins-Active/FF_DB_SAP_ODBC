@@ -36,3 +36,8 @@ FString USAP_ODBC_BPLibrary::InsertInto(FString Target, TSet<FString> Placeholde
 
 	return MainStatement;
 }
+
+FString USAP_ODBC_BPLibrary::SelectFrom(FString Target, FString Where, TSet<FString> Placeholders)
+{
+	return FString();
+}
