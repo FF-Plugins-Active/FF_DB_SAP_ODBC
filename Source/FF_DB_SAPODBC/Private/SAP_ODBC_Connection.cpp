@@ -68,24 +68,6 @@ bool USAP_ODBC_Connection::Connection_Stop(FString& Out_Code)
 	return true;
 }
 
-bool USAP_ODBC_Connection::Connection_Delete(FString& Out_Code)
-{
-	if (this->ConnectionRef.isNull())
-	{
-		Out_Code = "Connection reference is not valid !";
-		return false;
-	}
-
-	FString Out_Code_Stop;
-	this->Connection_Stop(Out_Code_Stop);
-
-	this->ConnectionRef.reset();
-	this->ConnectionRef = nullptr;
-
-	Out_Code = "Connection successfully deleted. Please destroy this UObject !";
-	return true;
-}
-
 bool USAP_ODBC_Connection::PrepareStatement(FString& Out_Code, USAP_ODBC_Statement*& Out_Statement, FString SQL_Statement)
 {
 	if (this->ConnectionRef.isNull())
@@ -110,32 +92,13 @@ bool USAP_ODBC_Connection::PrepareStatement(FString& Out_Code, USAP_ODBC_Stateme
 
 	Out_Statement = NewObject<USAP_ODBC_Statement>();
 	Out_Statement->StatementPtr = MakeShared<odbc::PreparedStatementRef>(Statement);
+	Out_Statement->ConnectionPtr = MakeShared< odbc::ConnectionRef>(this->ConnectionRef);
 
 	Out_Code = "Statement successfully created !";
 	return true;
 }
 
 // STATEMENT.
-
-bool USAP_ODBC_Connection::CommitStatement(FString& Out_Code)
-{
-	if (this->ConnectionRef.isNull())
-	{
-		Out_Code = "Connection reference is not valid !";
-		return false;
-	}
-
-	if (!this->ConnectionRef->connected() && !this->ConnectionRef->isValid())
-	{
-		Out_Code = "There is no active connection to commit target statement !";
-		return false;
-	}
-
-	this->ConnectionRef->commit();
-
-	Out_Code = "Statement successfully commited !";
-	return true;
-}
 
 void USAP_ODBC_Statement::SetInt(int32 Value, int32 ParamIndex)
 {
@@ -203,6 +166,32 @@ void USAP_ODBC_Statement::ExecuteBatch(FString& Out_Code)
 	{
 		Out_Code = Exception.what();
 	}
+}
+
+bool USAP_ODBC_Statement::CommitStatement(FString& Out_Code)
+{
+	if (!this->ConnectionPtr.IsValid())
+	{
+		Out_Code = "Connection pointer is not valid !";
+		return false;
+	}
+
+	if (this->ConnectionPtr->isNull())
+	{
+		Out_Code = "Connection referance is not valid !";
+		return false;
+	}
+
+	if (!this->ConnectionPtr->get()->connected() && !this->ConnectionPtr->get()->isValid())
+	{
+		Out_Code = "There is no active connection to commit target statement !";
+		return false;
+	}
+
+	this->ConnectionPtr->get()->commit();
+
+	Out_Code = "Statement successfully commited !";
+	return true;
 }
 
 // RESULT.

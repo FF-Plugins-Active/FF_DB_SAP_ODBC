@@ -21,6 +21,9 @@ public:
 
 	odbc::ConnectionRef ConnectionRef = nullptr;
 
+	UPROPERTY(BlueprintReadOnly)
+	FString ConnectionId;
+
 	UFUNCTION(BlueprintCallable)
 	virtual bool Connection_Start(FString& Out_Code, FString In_Server, FString In_UserName, FString In_Password, bool bUseAutoCommit);
 
@@ -28,13 +31,7 @@ public:
 	virtual bool Connection_Stop(FString& Out_Code);
 
 	UFUNCTION(BlueprintCallable)
-	virtual bool Connection_Delete(FString& Out_Code);
-
-	UFUNCTION(BlueprintCallable)
 	virtual bool PrepareStatement(FString& Out_Code, USAP_ODBC_Statement*& Out_Statement, FString SQL_Statement);
-
-	UFUNCTION(BlueprintCallable)
-	virtual bool CommitStatement(FString& Out_Code);
 
 };
 
@@ -45,6 +42,7 @@ class FF_DB_SAPODBC_API USAP_ODBC_Statement : public UObject
 
 public:
 
+	TSharedPtr<odbc::ConnectionRef> ConnectionPtr;
 	TSharedPtr<odbc::PreparedStatementRef> StatementPtr;
 
 	UFUNCTION(BlueprintCallable)
@@ -58,6 +56,9 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	virtual void ExecuteBatch(FString& Out_Code);
+
+	UFUNCTION(BlueprintCallable)
+	virtual bool CommitStatement(FString& Out_Code);
 
 };
 

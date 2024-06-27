@@ -37,7 +37,13 @@ public:
 	virtual bool SAP_ODBC_Init_Environment();
 
 	UFUNCTION(BlueprintCallable)
-	virtual bool SAP_ODBC_Create_Connection(FString& Out_Code, USAP_ODBC_Connection*& CreatedConnection, FString In_Server, FString In_UserName, FString In_Password, bool bUseAutoCommit);
+	virtual bool SAP_ODBC_Connection_Create(FString& Out_Code, USAP_ODBC_Connection*& CreatedConnection, FString In_Server, FString In_UserName, FString In_Password, bool bUseAutoCommit);
+
+	UFUNCTION(BlueprintCallable)
+	virtual bool SAP_ODBC_Connection_Delete_Id(FString& Out_Code, FString ConnectionId);
+
+	UFUNCTION(BlueprintCallable)
+	virtual bool SAP_ODBC_Connection_Delete_Object(FString& Out_Code, UPARAM(ref) USAP_ODBC_Connection*& TargetConnection);
 
 	UPROPERTY(BlueprintReadOnly)
 	TMap<FString, USAP_ODBC_Connection*> MAP_Connections;

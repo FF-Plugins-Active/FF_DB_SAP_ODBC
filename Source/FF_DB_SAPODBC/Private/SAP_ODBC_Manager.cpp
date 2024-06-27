@@ -40,7 +40,7 @@ bool ASAP_ODBC_Manager::SAP_ODBC_Init_Environment()
 	return true;
 }
 
-bool ASAP_ODBC_Manager::SAP_ODBC_Create_Connection(FString& Out_Code, USAP_ODBC_Connection*& CreatedConnection, FString In_Server, FString In_UserName, FString In_Password, bool bUseAutoCommit)
+bool ASAP_ODBC_Manager::SAP_ODBC_Connection_Create(FString& Out_Code, USAP_ODBC_Connection*& CreatedConnection, FString In_Server, FString In_UserName, FString In_Password, bool bUseAutoCommit)
 {
 	if (In_Server.IsEmpty())
 	{
@@ -73,8 +73,12 @@ bool ASAP_ODBC_Manager::SAP_ODBC_Create_Connection(FString& Out_Code, USAP_ODBC_
 	FString Out_Code_Start;
 	if (Connection_Object->Connection_Start(Out_Code_Start, In_Server, In_UserName, In_Password, bUseAutoCommit))
 	{
+		FString ConnectionId = In_Server + "&&" + In_UserName;
+		Connection_Object->ConnectionId = ConnectionId;
+
 		CreatedConnection = Connection_Object;
-		this->MAP_Connections.Add((In_Server + "&&" + In_UserName), CreatedConnection);
+
+		this->MAP_Connections.Add(ConnectionId, CreatedConnection);
 
 		Out_Code = Out_Code_Start;
 		return true;
@@ -85,4 +89,63 @@ bool ASAP_ODBC_Manager::SAP_ODBC_Create_Connection(FString& Out_Code, USAP_ODBC_
 		Out_Code = Out_Code_Start;
 		return false;
 	}
+}
+
+bool ASAP_ODBC_Manager::SAP_ODBC_Connection_Delete_Id(FString& Out_Code, FString ConnectionId)
+{
+	if (ConnectionId.IsEmpty())
+	{
+		return false;
+	}
+
+	USAP_ODBC_Connection* TargetConnection = *this->MAP_Connections.Find(ConnectionId);
+
+	if (!IsValid(TargetConnection))
+	{
+		return false;
+	}
+	
+	if (TargetConnection->ConnectionRef.isNull())
+	{
+		Out_Code = "Connection reference is not valid !";
+		return false;
+	}
+
+	FString Out_Code_Stop;
+	TargetConnection->Connection_Stop(Out_Code_Stop);
+
+	TargetConnection->ConnectionRef.reset();
+	TargetConnection->ConnectionRef = nullptr;
+
+	MAP_Connections.Remove(ConnectionId);
+	TargetConnection = nullptr;
+
+	Out_Code = "Connection successfully deleted !";
+	return true;
+}
+
+bool ASAP_ODBC_Manager::SAP_ODBC_Connection_Delete_Object(FString& Out_Code, UPARAM(ref) USAP_ODBC_Connection*& TargetConnection)
+{
+	if (!IsValid(TargetConnection))
+	{
+		return false;
+	}
+
+	if (TargetConnection->ConnectionRef.isNull())
+	{
+		Out_Code = "Connection reference is not valid !";
+		return false;
+	}
+
+	FString Out_Code_Stop;
+	TargetConnection->Connection_Stop(Out_Code_Stop);
+
+	TargetConnection->ConnectionRef.reset();
+	TargetConnection->ConnectionRef = nullptr;
+
+	this->MAP_Connections.Remove(TargetConnection->ConnectionId);
+	TargetConnection = nullptr;
+
+	Out_Code = "Connection successfully deleted !";
+	return true;
 }
