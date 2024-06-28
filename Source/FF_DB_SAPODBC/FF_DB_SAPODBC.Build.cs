@@ -24,6 +24,9 @@ public class FF_DB_SAPODBC : ModuleRules
 			new string[]
 			{
                 "Core",
+                "Json",
+                "JsonUtilities",
+                "JsonBlueprintUtilities",
 				 // ... add other public dependencies that you statically link with here ...
 			}
 			);
@@ -35,7 +38,7 @@ public class FF_DB_SAPODBC : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
-				"Projects"
+				"Projects",
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

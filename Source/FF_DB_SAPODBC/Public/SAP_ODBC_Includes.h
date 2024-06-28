@@ -1,6 +1,7 @@
 #pragma once
 
 THIRD_PARTY_INCLUDES_START
+
 #include "odbc/Connection.h"
 
 #include "odbc/DatabaseMetaData.h"
@@ -17,4 +18,7 @@ THIRD_PARTY_INCLUDES_START
 #include "odbc/ResultSetMetaDataUnicode.h"
 
 #include "odbc/StringConverter.h"
+#include "odbc/Types.h"
+#include "odbc/Util.h"
+
 THIRD_PARTY_INCLUDES_END

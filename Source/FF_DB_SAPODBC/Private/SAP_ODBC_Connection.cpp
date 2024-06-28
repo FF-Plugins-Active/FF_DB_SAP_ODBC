@@ -194,16 +194,16 @@ bool USAP_ODBC_Statement::CommitStatement(FString& Out_Code)
 	return true;
 }
 
-void USAP_ODBC_Statement::ExecuteQuery(FString& Out_Code, USAP_ODBC_Result*& Out_Result)
+bool USAP_ODBC_Statement::ExecuteQuery(FString& Out_Code, USAP_ODBC_Result*& Out_Result)
 {
 	if (!this->StatementPtr.IsValid())
 	{
-		return;
+		return false;
 	}
 
 	if (this->StatementPtr->isNull())
 	{
-		return;
+		return false;;
 	}
 
 	odbc::ResultSetRef QueryResult;
@@ -216,25 +216,138 @@ void USAP_ODBC_Statement::ExecuteQuery(FString& Out_Code, USAP_ODBC_Result*& Out
 	catch (const std::exception& Exception)
 	{
 		Out_Code = Exception.what();
+		return false;
 	}
 
-	if (QueryResult.isNull())
+	USAP_ODBC_Result* ResultObject = NewObject<USAP_ODBC_Result>();
+
+	if (!ResultObject->SetQueryResultPtr(QueryResult))
 	{
-		return;
+		return false;
 	}
-
-	Out_Result = NewObject<USAP_ODBC_Result>();
-	Out_Result->QueryResultPtr = MakeShared<odbc::ResultSetRef>(QueryResult);
+	
+	if (!ResultObject->GetMetaData(Out_Code))
+	{
+		return false;
+	}
+	
+	Out_Result = ResultObject;
+	return true;
 }
 
 // RESULT.
 
-bool USAP_ODBC_Result::GetMetaData(FString& Out_Code)
+bool USAP_ODBC_Result::SetQueryResultPtr(odbc::ResultSetRef ResultReferance)
 {
-	odbc::ResultSetMetaDataRef MetaData = this->QueryResultPtr->get()->getMetaData();
+	if (ResultReferance.isNull())
+	{
+		return false;
+	}
+
+	this->QueryResultPtr = MakeShared<odbc::ResultSetRef>(ResultReferance);
+	return true;
 }
 
-bool USAP_ODBC_Result::GetString(FString& Out_Code, FString& Out_String, int32 ColumnIndex)
+bool USAP_ODBC_Result::GetMetaData(FString& Out_Code)
+{
+	if (!this->QueryResultPtr.IsValid())
+	{
+		return false;
+	}
+
+	if (this->QueryResultPtr->isNull())
+	{
+		return false;
+	}
+	
+	try
+	{
+		this->MetaDataPtr = MakeShared< odbc::ResultSetMetaDataRef>(this->QueryResultPtr->get()->getMetaData());
+	}
+
+	catch (const std::exception& Exception)
+	{
+		Out_Code = Exception.what();
+		return false;
+	}
+
+	return true;
+}
+
+bool USAP_ODBC_Result::GetColumnCount(int32& ColumnCount)
+{
+	if (!this->MetaDataPtr.IsValid())
+	{
+		return false;
+	}
+
+	if (this->MetaDataPtr->isNull())
+	{
+		return false;
+	}
+
+	ColumnCount = this->MetaDataPtr->get()->getColumnCount();
+	return true;
+}
+
+bool USAP_ODBC_Result::GetMetaDataStruct(FString& Out_Code, FSAP_ODBC_MetaData& Out_MetaData, int32 ColumnIndex)
+{
+	if (!this->MetaDataPtr.IsValid())
+	{
+		return false;
+	}
+
+	if (this->MetaDataPtr->isNull())
+	{
+		return false;
+	}
+
+	FSAP_ODBC_MetaData MetaData;
+	
+	try
+	{
+		MetaData.ColumnScale = this->MetaDataPtr->get()->getScale(ColumnIndex);
+		MetaData.ColumnPrecision = this->MetaDataPtr->get()->getPrecision(ColumnIndex);
+
+		MetaData.ColumnDisplaySize = this->MetaDataPtr->get()->getColumnDisplaySize(ColumnIndex);
+		MetaData.ColumnLenght = this->MetaDataPtr->get()->getColumnLength(ColumnIndex);
+		MetaData.ColumnOctetLenght = this->MetaDataPtr->get()->getColumnOctetLength(ColumnIndex);
+
+		MetaData.ColumnType = this->MetaDataPtr->get()->getColumnType(ColumnIndex);
+		MetaData.ColumnTypeName = UTF8_TO_TCHAR(this->MetaDataPtr->get()->getColumnTypeName(ColumnIndex).c_str());
+
+		MetaData.BaseColumnName = UTF8_TO_TCHAR(this->MetaDataPtr->get()->getBaseColumnName(ColumnIndex).c_str());
+		MetaData.ColumnName = UTF8_TO_TCHAR(this->MetaDataPtr->get()->getColumnName(ColumnIndex).c_str());
+		MetaData.ColumnLabel = UTF8_TO_TCHAR(this->MetaDataPtr->get()->getColumnLabel(ColumnIndex).c_str());
+
+		MetaData.BaseTableName = UTF8_TO_TCHAR(this->MetaDataPtr->get()->getBaseTableName(ColumnIndex).c_str());
+		MetaData.TableName = UTF8_TO_TCHAR(this->MetaDataPtr->get()->getTableName(ColumnIndex).c_str());
+
+		MetaData.CatalogName = UTF8_TO_TCHAR(this->MetaDataPtr->get()->getCatalogName(ColumnIndex).c_str());
+
+		MetaData.SchemaName = UTF8_TO_TCHAR(this->MetaDataPtr->get()->getSchemaName(ColumnIndex).c_str());
+
+		MetaData.bIsNullable = this->MetaDataPtr->get()->isNullable(ColumnIndex);
+		MetaData.bIsAutoIncrement = this->MetaDataPtr->get()->isAutoIncrement(ColumnIndex);
+		MetaData.bIsNamed = this->MetaDataPtr->get()->isNamed(ColumnIndex);
+		MetaData.bIsCaseSensitive = this->MetaDataPtr->get()->isCaseSensitive(ColumnIndex);
+		MetaData.bIsReadOnly = this->MetaDataPtr->get()->isReadOnly(ColumnIndex);
+		MetaData.bIsSearchable = this->MetaDataPtr->get()->isSearchable(ColumnIndex);
+		MetaData.bIsSigned = this->MetaDataPtr->get()->isSigned(ColumnIndex);
+	}
+
+	catch (const std::exception& Exception)
+	{
+		Out_Code = Exception.what();
+		return false;
+	}
+
+	Out_MetaData = MetaData;
+
+	return true;
+}
+
+bool USAP_ODBC_Result::GetString(FString& Out_Code, TArray<FString>& Out_String, int32 ColumnIndex)
 {
 	if (!this->QueryResultPtr.IsValid())
 	{
@@ -246,18 +359,58 @@ bool USAP_ODBC_Result::GetString(FString& Out_Code, FString& Out_String, int32 C
 		return false;
 	}
 
+	TArray<FString> TempArray;
+
 	try
 	{
 		while (this->QueryResultPtr->get()->next())
 		{
-			Out_String = this->QueryResultPtr->get()->getString(ColumnIndex)->c_str();
+			FString EachString = this->QueryResultPtr->get()->getString(ColumnIndex)->c_str();
+			TempArray.Add(EachString);
 		}	
 	}
 
 	catch (const std::exception& Exception)
 	{
 		Out_Code = Exception.what();
+		return false;
 	}
+
+	Out_String = TempArray;
+
+	return true;
+}
+
+bool USAP_ODBC_Result::GetInt(FString& Out_Code, TArray<int32>& Out_String, int32 ColumnIndex)
+{
+	if (!this->QueryResultPtr.IsValid())
+	{
+		return false;
+	}
+
+	if (this->QueryResultPtr->isNull())
+	{
+		return false;
+	}
+
+	TArray<int32> TempArray;
+	 
+	try
+	{
+		while (this->QueryResultPtr->get()->next())
+		{
+			int32 EachInt = this->QueryResultPtr->get()->getInt(ColumnIndex);
+			TempArray.Add(EachInt);
+		}
+	}
+
+	catch (const std::exception& Exception)
+	{
+		Out_Code = Exception.what();
+		return false;
+	}
+
+	Out_String = TempArray;
 
 	return true;
 }
