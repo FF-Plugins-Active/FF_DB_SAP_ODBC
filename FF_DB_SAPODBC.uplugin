@@ -24,6 +24,12 @@
 			"LoadingPhase": "PreLoadingScreen"
 		}
 	],
+	"Plugins": [
+		{
+			"Name": "JsonBlueprintUtilities",
+			"Enabled": true
+		}
+	],
 	"PlatformAllowList": [
 		"Win64"
 	]

@@ -226,11 +226,6 @@ bool USAP_ODBC_Statement::ExecuteQuery(FString& Out_Code, USAP_ODBC_Result*& Out
 		return false;
 	}
 	
-	if (!ResultObject->GetMetaData(Out_Code))
-	{
-		return false;
-	}
-	
 	Out_Result = ResultObject;
 	return true;
 }
@@ -243,97 +238,30 @@ bool USAP_ODBC_Result::SetQueryResultPtr(odbc::ResultSetRef ResultReferance)
 	{
 		return false;
 	}
-
-	this->QueryResultPtr = MakeShared<odbc::ResultSetRef>(ResultReferance);
-	return true;
-}
-
-bool USAP_ODBC_Result::GetMetaData(FString& Out_Code)
-{
-	if (!this->QueryResultPtr.IsValid())
-	{
-		return false;
-	}
-
-	if (this->QueryResultPtr->isNull())
-	{
-		return false;
-	}
 	
-	try
-	{
-		this->MetaDataPtr = MakeShared< odbc::ResultSetMetaDataRef>(this->QueryResultPtr->get()->getMetaData());
-	}
-
-	catch (const std::exception& Exception)
-	{
-		Out_Code = Exception.what();
-		return false;
-	}
-
+	this->QueryResult = ResultReferance;
 	return true;
 }
 
 bool USAP_ODBC_Result::GetColumnCount(int32& ColumnCount)
 {
-	if (!this->MetaDataPtr.IsValid())
+	if (this->QueryResult.isNull())
 	{
 		return false;
 	}
 
-	if (this->MetaDataPtr->isNull())
-	{
-		return false;
-	}
+	ColumnCount = this->QueryResult->getMetaData()->getColumnCount();
 
-	ColumnCount = this->MetaDataPtr->get()->getColumnCount();
 	return true;
 }
 
 bool USAP_ODBC_Result::GetMetaDataStruct(FString& Out_Code, FSAP_ODBC_MetaData& Out_MetaData, int32 ColumnIndex)
 {
-	if (!this->MetaDataPtr.IsValid())
-	{
-		return false;
-	}
+	odbc::ResultSetMetaData* Result = nullptr;
 
-	if (this->MetaDataPtr->isNull())
-	{
-		return false;
-	}
-
-	FSAP_ODBC_MetaData MetaData;
-	
 	try
 	{
-		MetaData.ColumnScale = this->MetaDataPtr->get()->getScale(ColumnIndex);
-		MetaData.ColumnPrecision = this->MetaDataPtr->get()->getPrecision(ColumnIndex);
-
-		MetaData.ColumnDisplaySize = this->MetaDataPtr->get()->getColumnDisplaySize(ColumnIndex);
-		MetaData.ColumnLenght = this->MetaDataPtr->get()->getColumnLength(ColumnIndex);
-		MetaData.ColumnOctetLenght = this->MetaDataPtr->get()->getColumnOctetLength(ColumnIndex);
-
-		MetaData.ColumnType = this->MetaDataPtr->get()->getColumnType(ColumnIndex);
-		MetaData.ColumnTypeName = UTF8_TO_TCHAR(this->MetaDataPtr->get()->getColumnTypeName(ColumnIndex).c_str());
-
-		MetaData.BaseColumnName = UTF8_TO_TCHAR(this->MetaDataPtr->get()->getBaseColumnName(ColumnIndex).c_str());
-		MetaData.ColumnName = UTF8_TO_TCHAR(this->MetaDataPtr->get()->getColumnName(ColumnIndex).c_str());
-		MetaData.ColumnLabel = UTF8_TO_TCHAR(this->MetaDataPtr->get()->getColumnLabel(ColumnIndex).c_str());
-
-		MetaData.BaseTableName = UTF8_TO_TCHAR(this->MetaDataPtr->get()->getBaseTableName(ColumnIndex).c_str());
-		MetaData.TableName = UTF8_TO_TCHAR(this->MetaDataPtr->get()->getTableName(ColumnIndex).c_str());
-
-		MetaData.CatalogName = UTF8_TO_TCHAR(this->MetaDataPtr->get()->getCatalogName(ColumnIndex).c_str());
-
-		MetaData.SchemaName = UTF8_TO_TCHAR(this->MetaDataPtr->get()->getSchemaName(ColumnIndex).c_str());
-
-		MetaData.bIsNullable = this->MetaDataPtr->get()->isNullable(ColumnIndex);
-		MetaData.bIsAutoIncrement = this->MetaDataPtr->get()->isAutoIncrement(ColumnIndex);
-		MetaData.bIsNamed = this->MetaDataPtr->get()->isNamed(ColumnIndex);
-		MetaData.bIsCaseSensitive = this->MetaDataPtr->get()->isCaseSensitive(ColumnIndex);
-		MetaData.bIsReadOnly = this->MetaDataPtr->get()->isReadOnly(ColumnIndex);
-		MetaData.bIsSearchable = this->MetaDataPtr->get()->isSearchable(ColumnIndex);
-		MetaData.bIsSigned = this->MetaDataPtr->get()->isSigned(ColumnIndex);
+		Result = this->QueryResult->getMetaData().get();
 	}
 
 	catch (const std::exception& Exception)
@@ -341,6 +269,36 @@ bool USAP_ODBC_Result::GetMetaDataStruct(FString& Out_Code, FSAP_ODBC_MetaData& 
 		Out_Code = Exception.what();
 		return false;
 	}
+
+	FSAP_ODBC_MetaData MetaData;
+	MetaData.ColumnScale = Result->getScale(ColumnIndex);
+	MetaData.ColumnPrecision = Result->getPrecision(ColumnIndex);
+
+	MetaData.ColumnDisplaySize = Result->getColumnDisplaySize(ColumnIndex);
+	MetaData.ColumnLenght = Result->getColumnLength(ColumnIndex);
+	MetaData.ColumnOctetLenght = Result->getColumnOctetLength(ColumnIndex);
+
+	MetaData.ColumnType = Result->getColumnType(ColumnIndex);
+	MetaData.ColumnTypeName = UTF8_TO_TCHAR(Result->getColumnTypeName(ColumnIndex).c_str());
+
+	MetaData.BaseColumnName = UTF8_TO_TCHAR(Result->getBaseColumnName(ColumnIndex).c_str());
+	MetaData.ColumnName = UTF8_TO_TCHAR(Result->getColumnName(ColumnIndex).c_str());
+	MetaData.ColumnLabel = UTF8_TO_TCHAR(Result->getColumnLabel(ColumnIndex).c_str());
+
+	MetaData.BaseTableName = UTF8_TO_TCHAR(Result->getBaseTableName(ColumnIndex).c_str());
+	MetaData.TableName = UTF8_TO_TCHAR(Result->getTableName(ColumnIndex).c_str());
+
+	MetaData.CatalogName = UTF8_TO_TCHAR(Result->getCatalogName(ColumnIndex).c_str());
+
+	MetaData.SchemaName = UTF8_TO_TCHAR(Result->getSchemaName(ColumnIndex).c_str());
+
+	MetaData.bIsNullable = Result->isNullable(ColumnIndex);
+	MetaData.bIsAutoIncrement = Result->isAutoIncrement(ColumnIndex);
+	MetaData.bIsNamed = Result->isNamed(ColumnIndex);
+	MetaData.bIsCaseSensitive = Result->isCaseSensitive(ColumnIndex);
+	MetaData.bIsReadOnly = Result->isReadOnly(ColumnIndex);
+	MetaData.bIsSearchable = Result->isSearchable(ColumnIndex);
+	MetaData.bIsSigned = Result->isSigned(ColumnIndex);
 
 	Out_MetaData = MetaData;
 
@@ -349,13 +307,9 @@ bool USAP_ODBC_Result::GetMetaDataStruct(FString& Out_Code, FSAP_ODBC_MetaData& 
 
 bool USAP_ODBC_Result::GetString(FString& Out_Code, TArray<FString>& Out_String, int32 ColumnIndex)
 {
-	if (!this->QueryResultPtr.IsValid())
+	if (this->QueryResult.isNull())
 	{
-		return false;
-	}
-
-	if (this->QueryResultPtr->isNull())
-	{
+		Out_Code = "Query result referance is null !";
 		return false;
 	}
 
@@ -363,10 +317,14 @@ bool USAP_ODBC_Result::GetString(FString& Out_Code, TArray<FString>& Out_String,
 
 	try
 	{
-		while (this->QueryResultPtr->get()->next())
+		while (this->QueryResult->next())
 		{
-			FString EachString = this->QueryResultPtr->get()->getString(ColumnIndex)->c_str();
-			TempArray.Add(EachString);
+			odbc::String ValueString = this->QueryResult->getString(ColumnIndex);
+
+			if (!ValueString.isNull())
+			{
+				TempArray.Add(UTF8_TO_TCHAR(ValueString->c_str()));
+			}
 		}	
 	}
 
@@ -383,24 +341,23 @@ bool USAP_ODBC_Result::GetString(FString& Out_Code, TArray<FString>& Out_String,
 
 bool USAP_ODBC_Result::GetInt(FString& Out_Code, TArray<int32>& Out_String, int32 ColumnIndex)
 {
-	if (!this->QueryResultPtr.IsValid())
+	if (this->QueryResult.isNull())
 	{
-		return false;
-	}
-
-	if (this->QueryResultPtr->isNull())
-	{
+		Out_Code = "Query result referance is null !";
 		return false;
 	}
 
 	TArray<int32> TempArray;
-	 
+
 	try
 	{
-		while (this->QueryResultPtr->get()->next())
+		while (this->QueryResult->next())
 		{
-			int32 EachInt = this->QueryResultPtr->get()->getInt(ColumnIndex);
-			TempArray.Add(EachInt);
+			odbc::Int ValueInt = this->QueryResult->getInt(ColumnIndex);
+			if (!ValueInt.isNull())
+			{
+				TempArray.Add(*ValueInt);
+			}
 		}
 	}
 

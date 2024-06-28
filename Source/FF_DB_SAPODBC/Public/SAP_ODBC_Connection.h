@@ -18,67 +18,67 @@ struct FF_DB_SAPODBC_API FSAP_ODBC_MetaData
 
 public:
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, AdvancedDisplay)
 	int32 ColumnScale = 0;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, AdvancedDisplay)
 	int32 ColumnPrecision = 0;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, AdvancedDisplay)
 	int32 ColumnDisplaySize = 0;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, AdvancedDisplay)
 	int32 ColumnLenght = 0;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, AdvancedDisplay)
 	int32 ColumnOctetLenght = 0;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, AdvancedDisplay)
 	int32 ColumnType = 0;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, AdvancedDisplay)
 	FString ColumnTypeName;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, AdvancedDisplay)
 	FString BaseColumnName;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, AdvancedDisplay)
 	FString ColumnName;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, AdvancedDisplay)
 	FString ColumnLabel;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, AdvancedDisplay)
 	FString BaseTableName;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, AdvancedDisplay)
 	FString TableName;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, AdvancedDisplay)
 	FString CatalogName;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, AdvancedDisplay)
 	FString SchemaName;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, AdvancedDisplay)
 	bool bIsNullable = false;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, AdvancedDisplay)
 	bool bIsAutoIncrement = false;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, AdvancedDisplay)
 	bool bIsNamed = false;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, AdvancedDisplay)
 	bool bIsCaseSensitive = false;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, AdvancedDisplay)
 	bool bIsReadOnly = false;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, AdvancedDisplay)
 	bool bIsSearchable = false;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, AdvancedDisplay)
 	bool bIsSigned = false;
 };
 
@@ -92,7 +92,7 @@ public:
 
 	odbc::ConnectionRef ConnectionRef = nullptr;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, AdvancedDisplay)
 	FString ConnectionId;
 
 	UFUNCTION(BlueprintCallable)
@@ -143,13 +143,11 @@ class FF_DB_SAPODBC_API USAP_ODBC_Result : public UObject
 
 protected:
 
-	TSharedPtr<odbc::ResultSetMetaDataRef> MetaDataPtr;
-	TSharedPtr<odbc::ResultSetRef> QueryResultPtr;
+	odbc::ResultSetRef QueryResult;
 
 public:
 
 	virtual bool SetQueryResultPtr(odbc::ResultSetRef ResultReferance);
-	virtual bool GetMetaData(FString& Out_Code);
 
 	UFUNCTION(BlueprintCallable)
 	virtual bool GetColumnCount(int32& ColumnCount);
