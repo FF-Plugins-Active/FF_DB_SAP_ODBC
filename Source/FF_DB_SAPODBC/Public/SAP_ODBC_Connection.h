@@ -12,6 +12,33 @@
 #include "SAP_ODBC_Connection.generated.h"
 
 USTRUCT(BlueprintType)
+struct FF_DB_SAPODBC_API FSAP_ODBC_DataValue
+{
+	GENERATED_BODY()
+
+public:
+
+	FString ValString;
+	int32 ValInt32 = 0;
+	double ValDouble = 0.f;
+	bool ValBool = false;
+	FDateTime ValDateTime;
+
+	UPROPERTY(BlueprintReadOnly)
+	int32 DataType = 0;
+
+	UPROPERTY(BlueprintReadOnly)
+	FString DataTypeName;
+
+	UPROPERTY(BlueprintReadOnly)
+	FString ColumnName;
+
+	UPROPERTY(BlueprintReadOnly)
+	FString ValueRepresentation;
+
+};
+
+USTRUCT(BlueprintType)
 struct FF_DB_SAPODBC_API FSAP_ODBC_MetaData
 {
 	GENERATED_BODY()
@@ -88,18 +115,24 @@ class FF_DB_SAPODBC_API USAP_ODBC_Connection : public UObject
 {
 	GENERATED_BODY()
 
+private:
+
+	FString ConnectionId;
+	odbc::ConnectionRef Connection;
+
 public:
 
-	odbc::ConnectionRef ConnectionRef = nullptr;
-
-	UPROPERTY(BlueprintReadOnly, AdvancedDisplay)
-	FString ConnectionId;
-
-	UFUNCTION(BlueprintCallable)
+	virtual odbc::ConnectionRef GetConenction();
+	virtual bool SetConnection(odbc::ConnectionRef In_Ref);
+	virtual bool SetConnectionId(FString In_Id);
 	virtual bool Connection_Start(FString& Out_Code, FString In_Server, FString In_UserName, FString In_Password, bool bUseAutoCommit);
-
-	UFUNCTION(BlueprintCallable)
 	virtual bool Connection_Stop(FString& Out_Code);
+	
+	UFUNCTION(BlueprintPure)
+	virtual bool IsConnectionValid();
+
+	UFUNCTION(BlueprintPure)
+	virtual FString GetConnectionId();
 
 	UFUNCTION(BlueprintCallable)
 	virtual bool PrepareStatement(FString& Out_Code, USAP_ODBC_Statement*& Out_Statement, FString SQL_Statement);
@@ -113,8 +146,8 @@ class FF_DB_SAPODBC_API USAP_ODBC_Statement : public UObject
 
 public:
 
-	TSharedPtr<odbc::ConnectionRef> ConnectionPtr;
-	TSharedPtr<odbc::PreparedStatementRef> StatementPtr;
+	TSharedPtr<odbc::ConnectionRef> Connection;
+	TSharedPtr<odbc::PreparedStatementRef> Statement;
 
 	UFUNCTION(BlueprintCallable)
 	virtual void SetInt(int32 Value, int32 ParamIndex = 1);
@@ -143,22 +176,33 @@ class FF_DB_SAPODBC_API USAP_ODBC_Result : public UObject
 
 protected:
 
-	odbc::ResultSetRef QueryResult;
+	int32 RowCount = 0;
+	TSharedPtr<odbc::ResultSetRef> QueryResult;
+	TMap<FVector2D, FSAP_ODBC_DataValue> All_Data;
 
 public:
 
-	virtual bool SetQueryResultPtr(odbc::ResultSetRef ResultReferance);
+	virtual bool SetQueryResult(FString& Out_Code, odbc::ResultSetRef ResultReferance);
+
+	UFUNCTION(BlueprintPure)
+	virtual int32 GetColumnCount();
+
+	UFUNCTION(BlueprintPure)
+	virtual int32 GetRowCount(int32& LastIndex);
 
 	UFUNCTION(BlueprintCallable)
-	virtual bool GetColumnCount(int32& ColumnCount);
+	virtual bool GetMetaData(FString& Out_Code, FSAP_ODBC_MetaData& Out_MetaData, const int32 ColumnIndex = 1);
 
 	UFUNCTION(BlueprintCallable)
-	virtual bool GetMetaDataStruct(FString& Out_Code, FSAP_ODBC_MetaData& Out_MetaData, int32 ColumnIndex = 1);
+	virtual bool GetDataFromRow(FString& Out_Code, TArray<FSAP_ODBC_DataValue>& Out_Value, const int32 RowIndex);
 
 	UFUNCTION(BlueprintCallable)
-	virtual bool GetString(FString& Out_Code, TArray<FString>& Out_String, int32 ColumnIndex = 1);
+	virtual bool GetDataFromColumnIndex(FString& Out_Code, TArray<FSAP_ODBC_DataValue>& Out_Value, const int32 ColumnIndex);
 
 	UFUNCTION(BlueprintCallable)
-	virtual bool GetInt(FString& Out_Code, TArray<int32>& Out_String, int32 ColumnIndex = 1);
+	virtual bool GetDataFromColumnName(FString& Out_Code, TArray<FSAP_ODBC_DataValue>& Out_Value, const FString ColumnName);
+
+	UFUNCTION(BlueprintCallable)
+	virtual bool GetSingleData(FString& Out_Code, FSAP_ODBC_DataValue& Out_Value, const FVector2D Position);
 
 };

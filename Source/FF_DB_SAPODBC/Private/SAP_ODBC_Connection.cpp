@@ -1,68 +1,113 @@
 #include "SAP_ODBC_Connection.h"
 
+// UE Includes.
+#include "Kismet/KismetMathLibrary.h"
+
 // CONNECTION.
+
+bool USAP_ODBC_Connection::SetConnection(odbc::ConnectionRef In_Ref)
+{
+	if (In_Ref.isNull())
+	{
+		return false;
+	}
+
+	this->Connection = In_Ref;
+	return true;
+}
+
+odbc::ConnectionRef USAP_ODBC_Connection::GetConenction()
+{
+	if (this->Connection.isNull())
+	{
+		return nullptr;
+	}
+
+	return nullptr;
+}
+
+bool USAP_ODBC_Connection::SetConnectionId(FString In_Id)
+{
+	if (In_Id.IsEmpty())
+	{
+		return false;
+	}
+
+	if (!this->ConnectionId.IsEmpty())
+	{
+		return false;
+	}
+
+	this->ConnectionId = In_Id;
+	return true;
+}
+
+bool USAP_ODBC_Connection::IsConnectionValid()
+{
+	return this->Connection.isNull();
+}
+
+FString USAP_ODBC_Connection::GetConnectionId()
+{
+	return this->ConnectionId;
+}
 
 bool USAP_ODBC_Connection::Connection_Start(FString& Out_Code, FString In_Server, FString In_UserName, FString In_Password, bool bUseAutoCommit)
 {
-	if (this->ConnectionRef.isNull())
+	if (this->Connection.isNull())
 	{
 		Out_Code = "Connection referance is null !";
 		return false;
 	}
 
-	if (this->ConnectionRef->connected() && this->ConnectionRef->isValid())
+	if (this->Connection->connected() && this->Connection->isValid())
 	{
 		Out_Code = "There is an already active connection !";
 		return false;
 	}
 
-	FString ErrorLog;
+	bool bConnectionStatus = false;
 
 	try
 	{
-		this->ConnectionRef->connect(TCHAR_TO_ANSI(*In_Server), TCHAR_TO_ANSI(*In_UserName), TCHAR_TO_ANSI(*In_Password));
-		this->ConnectionRef->setAutoCommit(bUseAutoCommit);
+		this->Connection->connect(TCHAR_TO_ANSI(*In_Server), TCHAR_TO_ANSI(*In_UserName), TCHAR_TO_ANSI(*In_Password));
+		this->Connection->setAutoCommit(bUseAutoCommit);
+		bConnectionStatus = this->Connection->connected();
 	}
 	
 	catch (const std::exception& Exception)
 	{
-		ErrorLog = Exception.what();
-	}
-	
-	if (this->ConnectionRef->connected())
-	{
-		Out_Code = "Connection successfully started.";
-		return true;
-	}
-
-	else
-	{
-		Out_Code = "There is a problem with connection start ! = " + ErrorLog;
+		Out_Code = Exception.what();
 		return false;
 	}
+
+	Out_Code  = bConnectionStatus ? "Connection successfully started." : "Connection couldn't established !";
+	return bConnectionStatus;
 }
 
 bool USAP_ODBC_Connection::Connection_Stop(FString& Out_Code)
 {
-	if (this->ConnectionRef.isNull())
+	if (this->Connection.isNull())
 	{
 		Out_Code = "Connection reference is NULL !";
 		return false;
 	}
 
-	if (!this->ConnectionRef->isValid())
+	if (!this->Connection->isValid())
 	{
 		Out_Code = "Connection reference is not valid !";
 		return false;
 	}
 
-	if (!this->ConnectionRef->connected())
+	if (!this->Connection->connected())
 	{
 		Out_Code = "There is no active connection !";
 		return false;
 	}
 
-	this->ConnectionRef->disconnect();
+	this->Connection->disconnect();
+	this->Connection.reset();
+	this->Connection = nullptr;
 	
 	Out_Code = "Connection successfull stopped.";
 	return true;
@@ -70,29 +115,35 @@ bool USAP_ODBC_Connection::Connection_Stop(FString& Out_Code)
 
 bool USAP_ODBC_Connection::PrepareStatement(FString& Out_Code, USAP_ODBC_Statement*& Out_Statement, FString SQL_Statement)
 {
-	if (this->ConnectionRef.isNull())
+	if (this->Connection.isNull())
+	{
+		Out_Code = "Connection reference is NULL !";
+		return false;
+	}
+
+	if (!this->Connection->isValid())
 	{
 		Out_Code = "Connection reference is not valid !";
 		return false;
 	}
 
-	if (!this->ConnectionRef->connected() && !this->ConnectionRef->isValid())
+	if (!this->Connection->connected())
 	{
-		Out_Code = "There is no active connection to prepare a statement !";
+		Out_Code = "There is no active connection !";
 		return false;
 	}
 
-	odbc::PreparedStatementRef Statement = this->ConnectionRef->prepareStatement(reinterpret_cast<char16_t*>(TCHAR_TO_UTF16(*SQL_Statement)));
+	odbc::PreparedStatementRef TempStatement = this->Connection->prepareStatement(reinterpret_cast<char16_t*>(TCHAR_TO_UTF16(*SQL_Statement)));
 	
-	if (Statement.isNull())
+	if (TempStatement.isNull())
 	{
 		Out_Code = "There is a problem while preparing statement !";
 		return false;
 	}
 
 	Out_Statement = NewObject<USAP_ODBC_Statement>();
-	Out_Statement->StatementPtr = MakeShared<odbc::PreparedStatementRef>(Statement);
-	Out_Statement->ConnectionPtr = MakeShared< odbc::ConnectionRef>(this->ConnectionRef);
+	Out_Statement->Statement = MakeShared<odbc::PreparedStatementRef>(TempStatement);
+	Out_Statement->Connection = MakeShared< odbc::ConnectionRef>(this->Connection);
 
 	Out_Code = "Statement successfully created !";
 	return true;
@@ -102,64 +153,64 @@ bool USAP_ODBC_Connection::PrepareStatement(FString& Out_Code, USAP_ODBC_Stateme
 
 void USAP_ODBC_Statement::SetInt(int32 Value, int32 ParamIndex)
 {
-	if (!this->StatementPtr.IsValid())
+	if (!this->Statement.IsValid())
 	{
 		return;
 	}
 
-	if (this->StatementPtr->isNull())
+	if (this->Statement->isNull())
 	{
 		return;
 	}
 
-	this->StatementPtr->get()->setInt(ParamIndex, Value);
+	this->Statement->get()->setInt(ParamIndex, Value);
 }
 
 void USAP_ODBC_Statement::SetString(FString Value, int32 ParamIndex)
 {
-	if (!this->StatementPtr.IsValid())
+	if (!this->Statement.IsValid())
 	{
 		return;
 	}
 
-	if (this->StatementPtr->isNull())
+	if (this->Statement->isNull())
 	{
 		return;
 	}
 
-	this->StatementPtr->get()->setCString(ParamIndex, TCHAR_TO_UTF8(*Value));
+	this->Statement->get()->setCString(ParamIndex, TCHAR_TO_UTF8(*Value));
 }
 
 void USAP_ODBC_Statement::AddBatch()
 {
-	if (!this->StatementPtr.IsValid())
+	if (!this->Statement.IsValid())
 	{
 		return;
 	}
 
-	if (this->StatementPtr->isNull())
+	if (this->Statement->isNull())
 	{
 		return;
 	}
 
-	this->StatementPtr->get()->addBatch();
+	this->Statement->get()->addBatch();
 }
 
 void USAP_ODBC_Statement::ExecuteBatch(FString& Out_Code)
 {
-	if (!this->StatementPtr.IsValid())
+	if (!this->Statement.IsValid())
 	{
 		return;
 	}
 
-	if (this->StatementPtr->isNull())
+	if (this->Statement->isNull())
 	{
 		return;
 	}
 
 	try
 	{
-		this->StatementPtr->get()->executeBatch();
+		this->Statement->get()->executeBatch();
 	}
 
 	catch (const std::exception& Exception)
@@ -170,25 +221,31 @@ void USAP_ODBC_Statement::ExecuteBatch(FString& Out_Code)
 
 bool USAP_ODBC_Statement::CommitStatement(FString& Out_Code)
 {
-	if (!this->ConnectionPtr.IsValid())
+	if (!this->Connection.IsValid())
 	{
 		Out_Code = "Connection pointer is not valid !";
 		return false;
 	}
 
-	if (this->ConnectionPtr->isNull())
+	if (this->Connection->isNull())
 	{
-		Out_Code = "Connection referance is not valid !";
+		Out_Code = "Connection reference is NULL !";
 		return false;
 	}
 
-	if (!this->ConnectionPtr->get()->connected() && !this->ConnectionPtr->get()->isValid())
+	if (!this->Connection->get()->isValid())
 	{
-		Out_Code = "There is no active connection to commit target statement !";
+		Out_Code = "Connection reference is not valid !";
 		return false;
 	}
 
-	this->ConnectionPtr->get()->commit();
+	if (!this->Connection->get()->connected())
+	{
+		Out_Code = "There is no active connection !";
+		return false;
+	}
+
+	this->Connection->get()->commit();
 
 	Out_Code = "Statement successfully commited !";
 	return true;
@@ -196,12 +253,12 @@ bool USAP_ODBC_Statement::CommitStatement(FString& Out_Code)
 
 bool USAP_ODBC_Statement::ExecuteQuery(FString& Out_Code, USAP_ODBC_Result*& Out_Result)
 {
-	if (!this->StatementPtr.IsValid())
+	if (!this->Statement.IsValid())
 	{
 		return false;
 	}
 
-	if (this->StatementPtr->isNull())
+	if (this->Statement->isNull())
 	{
 		return false;;
 	}
@@ -210,7 +267,7 @@ bool USAP_ODBC_Statement::ExecuteQuery(FString& Out_Code, USAP_ODBC_Result*& Out
 
 	try
 	{
-		QueryResult = this->StatementPtr->get()->executeQuery();
+		QueryResult = this->Statement->get()->executeQuery();
 	}
 
 	catch (const std::exception& Exception)
@@ -221,7 +278,7 @@ bool USAP_ODBC_Statement::ExecuteQuery(FString& Out_Code, USAP_ODBC_Result*& Out
 
 	USAP_ODBC_Result* ResultObject = NewObject<USAP_ODBC_Result>();
 
-	if (!ResultObject->SetQueryResultPtr(QueryResult))
+	if (!ResultObject->SetQueryResult(Out_Code, QueryResult))
 	{
 		return false;
 	}
@@ -232,36 +289,148 @@ bool USAP_ODBC_Statement::ExecuteQuery(FString& Out_Code, USAP_ODBC_Result*& Out
 
 // RESULT.
 
-bool USAP_ODBC_Result::SetQueryResultPtr(odbc::ResultSetRef ResultReferance)
+bool USAP_ODBC_Result::SetQueryResult(FString& Out_Code, odbc::ResultSetRef ResultReferance)
 {
 	if (ResultReferance.isNull())
 	{
 		return false;
 	}
 	
-	this->QueryResult = ResultReferance;
-	return true;
-}
+	int32 Index_Row = 0;
+	TMap<FVector2D, FSAP_ODBC_DataValue> Temp_Data;
 
-bool USAP_ODBC_Result::GetColumnCount(int32& ColumnCount)
-{
-	if (this->QueryResult.isNull())
+	try
 	{
+		const int32 ColumnCount = ResultReferance->getMetaData()->getColumnCount();
+
+		while (ResultReferance->next())
+		{
+			for (int32 Index_Column_Raw = 0; Index_Column_Raw < ColumnCount; Index_Column_Raw++)
+			{
+				const int32 Index_Column = Index_Column_Raw + 1;
+
+				const int32 DataType = ResultReferance->getMetaData()->getColumnType(Index_Column);
+				const FString DataTypeName = UTF8_TO_TCHAR(ResultReferance->getMetaData()->getColumnTypeName(Index_Column).c_str());
+				const FString ColumnName = UTF8_TO_TCHAR(ResultReferance->getMetaData()->getColumnName(Index_Column).c_str());
+
+				FSAP_ODBC_DataValue EachData;
+				EachData.DataType = DataType;
+				EachData.DataTypeName = DataTypeName;
+				EachData.ColumnName = ColumnName;
+
+				if (DataType == 4)
+				{
+					odbc::Int TempInt = ResultReferance->getInt(Index_Column);
+
+					if (!TempInt.isNull())
+					{
+						EachData.ValInt32 = *TempInt;
+						EachData.ValueRepresentation = FString::FromInt(*TempInt);
+					}
+				}
+
+				if (DataType == 6)
+				{
+					odbc::Double TempDouble = ResultReferance->getDouble(Index_Column);
+
+					if (!TempDouble.isNull())
+					{
+						EachData.ValDouble = *TempDouble;
+						EachData.ValueRepresentation = FString::SanitizeFloat(*TempDouble);
+					}
+				}
+
+				// MSSQL's "time" dateType is an nvarchar, too.
+				if (DataType == -9 || DataType == -1 || DataType == -2 || DataType == -9 || DataType == -93)
+				{
+					odbc::String TempStringRaw = ResultReferance->getString(Index_Column);
+
+					if (!TempStringRaw.isNull())
+					{
+						FString TempString = UTF8_TO_TCHAR(TempStringRaw->c_str());
+						EachData.ValString = TempString;
+						EachData.ValueRepresentation = TempString;
+					}
+				}
+
+				/*
+				if (DataType == -9 || DataType == -93)
+				{
+					odbc::Date Section_Date = ResultReferance->getDate(Index_Column);
+					odbc::Time Section_Time = ResultReferance->getTime(Index_Column);
+
+					if (!Section_Date.isNull() && !Section_Time.isNull())
+					{
+						FDateTime DateTime = UKismetMathLibrary::MakeDateTime(Section_Date->year(), Section_Date->month(), Section_Date->day(), Section_Time->hour(), Section_Time->minute(), Section_Time->second());
+						EachData.ValDateTime = DateTime;
+						EachData.ValueRepresentation = DateTime.ToString();
+					}
+				}
+
+				if (DataType == -2)
+				{
+					odbc::Timestamp TimeStamp = ResultReferance->getTimestamp(Index_Column);
+
+					if (!TimeStamp.isNull())
+					{
+						FDateTime DateTime = UKismetMathLibrary::MakeDateTime(TimeStamp->year(), TimeStamp->month(), TimeStamp->day(), TimeStamp->hour(), TimeStamp->minute(), TimeStamp->second(), TimeStamp->milliseconds());
+						EachData.ValDateTime = DateTime;
+						EachData.ValueRepresentation = DateTime.ToString();
+					}
+				}
+				*/
+				Temp_Data.Add(FVector2D(Index_Row, Index_Column_Raw), EachData);
+			}
+
+			Index_Row += 1;
+		}
+	}
+
+	catch (const std::exception& Exception)
+	{
+		Out_Code = Exception.what();
 		return false;
 	}
 
-	ColumnCount = this->QueryResult->getMetaData()->getColumnCount();
+	this->QueryResult = MakeShared<odbc::ResultSetRef>(ResultReferance);
+	this->All_Data = Temp_Data;
+	this->RowCount = Index_Row;
 
 	return true;
 }
 
-bool USAP_ODBC_Result::GetMetaDataStruct(FString& Out_Code, FSAP_ODBC_MetaData& Out_MetaData, int32 ColumnIndex)
+int32 USAP_ODBC_Result::GetColumnCount()
+{
+	if (this->QueryResult->isNull())
+	{
+		return 0;
+	}
+
+	return this->QueryResult->get()->getMetaData()->getColumnCount();
+}
+
+int32 USAP_ODBC_Result::GetRowCount(int32& LastIndex)
+{
+	if (this->QueryResult->isNull())
+	{
+		return 0;
+	}
+
+	if (this->RowCount != 0)
+	{
+		LastIndex = this->RowCount - 1;
+	}
+
+	return this->RowCount;
+}
+
+bool USAP_ODBC_Result::GetMetaData(FString& Out_Code, FSAP_ODBC_MetaData& Out_MetaData, const int32 ColumnIndex)
 {
 	odbc::ResultSetMetaData* Result = nullptr;
 
 	try
 	{
-		Result = this->QueryResult->getMetaData().get();
+		Result = this->QueryResult->get()->getMetaData().get();
 	}
 
 	catch (const std::exception& Exception)
@@ -305,27 +474,31 @@ bool USAP_ODBC_Result::GetMetaDataStruct(FString& Out_Code, FSAP_ODBC_MetaData& 
 	return true;
 }
 
-bool USAP_ODBC_Result::GetString(FString& Out_Code, TArray<FString>& Out_String, int32 ColumnIndex)
+bool USAP_ODBC_Result::GetDataFromRow(FString& Out_Code, TArray<FSAP_ODBC_DataValue>& Out_Value, const int32 RowIndex)
 {
-	if (this->QueryResult.isNull())
+	if (this->All_Data.IsEmpty())
 	{
-		Out_Code = "Query result referance is null !";
+		Out_Code = "Data pool is empty !";
 		return false;
 	}
 
-	TArray<FString> TempArray;
+	if (RowIndex < 0 && this->RowCount >= RowIndex)
+	{
+		Out_Code = "Given row index is out of data pool's range !";
+		return false;
+	}
 
 	try
 	{
-		while (this->QueryResult->next())
-		{
-			odbc::String ValueString = this->QueryResult->getString(ColumnIndex);
+		const int32 ColumnCount = this->QueryResult->get()->getMetaData()->getColumnCount();
+		TArray<FSAP_ODBC_DataValue> Temp_Array;
 
-			if (!ValueString.isNull())
-			{
-				TempArray.Add(UTF8_TO_TCHAR(ValueString->c_str()));
-			}
-		}	
+		for (int32 Index_Column = 0; Index_Column < ColumnCount; Index_Column++)
+		{
+			Temp_Array.Add(*this->All_Data.Find(FVector2D(RowIndex, Index_Column)));
+		}
+
+		Out_Value = Temp_Array;
 	}
 
 	catch (const std::exception& Exception)
@@ -333,41 +506,82 @@ bool USAP_ODBC_Result::GetString(FString& Out_Code, TArray<FString>& Out_String,
 		Out_Code = Exception.what();
 		return false;
 	}
-
-	Out_String = TempArray;
 
 	return true;
 }
 
-bool USAP_ODBC_Result::GetInt(FString& Out_Code, TArray<int32>& Out_String, int32 ColumnIndex)
+bool USAP_ODBC_Result::GetDataFromColumnIndex(FString& Out_Code, TArray<FSAP_ODBC_DataValue>& Out_Value, const int32 ColumnIndex)
 {
-	if (this->QueryResult.isNull())
+	if (this->All_Data.IsEmpty())
 	{
-		Out_Code = "Query result referance is null !";
+		Out_Code = "Data pool is empty !";
 		return false;
 	}
 
-	TArray<int32> TempArray;
+	TArray<FSAP_ODBC_DataValue> Temp_Array;
 
-	try
+	for (int32 Index_Row = 0; Index_Row < this->RowCount; Index_Row++)
 	{
-		while (this->QueryResult->next())
+		Temp_Array.Add(*this->All_Data.Find(FVector2D(Index_Row, ColumnIndex)));
+	}
+
+	Out_Value = Temp_Array;
+	return true;
+}
+
+bool USAP_ODBC_Result::GetDataFromColumnName(FString& Out_Code, TArray<FSAP_ODBC_DataValue>& Out_Value, const FString ColumnName)
+{
+	if (this->All_Data.IsEmpty())
+	{
+		Out_Code = "Data pool is empty !";
+		return false;
+	}
+
+	int32 TargetColumnIndex = 0;
+	odbc::ResultSetMetaDataRef MetaDataRef = this->QueryResult->get()->getMetaData();
+	const int32 ColumnCount = MetaDataRef->getColumnCount();
+
+	for (int32 Index_Column = 1; Index_Column < ColumnCount + 1; Index_Column++)
+	{
+		FString EachColumnName = UTF8_TO_TCHAR(MetaDataRef->getColumnName(Index_Column).c_str());
+
+		if (ColumnName == EachColumnName)
 		{
-			odbc::Int ValueInt = this->QueryResult->getInt(ColumnIndex);
-			if (!ValueInt.isNull())
-			{
-				TempArray.Add(*ValueInt);
-			}
+			TargetColumnIndex = Index_Column;
+			break;
 		}
 	}
 
-	catch (const std::exception& Exception)
+	TArray<FSAP_ODBC_DataValue> Temp_Array;
+
+	for (int32 Index_Row = 0; Index_Row < this->RowCount; Index_Row++)
 	{
-		Out_Code = Exception.what();
+		Temp_Array.Add(*this->All_Data.Find(FVector2D(Index_Row, TargetColumnIndex)));
+	}
+
+	Out_Value = Temp_Array;
+	return true;
+}
+
+bool USAP_ODBC_Result::GetSingleData(FString& Out_Code, FSAP_ODBC_DataValue& Out_Value, const FVector2D Position)
+{
+	if (this->All_Data.IsEmpty())
+	{
+		Out_Code = "Data pool is empty !";
 		return false;
 	}
 
-	Out_String = TempArray;
+	FSAP_ODBC_DataValue* TempValue = this->All_Data.Find(Position);
 
-	return true;
+	if (TempValue)
+	{
+		Out_Value = *TempValue;
+		return true;
+	}
+
+	else
+	{
+		Out_Code = "No data found !";
+		return false;
+	}
 }
