@@ -13,20 +13,23 @@ struct FF_DB_SAP_ODBC_API FSAP_ODBC_DataValue
 
 public:
 
-	UPROPERTY(BlueprintReadOnly, meta = (ToolTip = ""))
-	FString ValString;
+	UPROPERTY(BlueprintReadOnly, meta = (ToolTip = "Use it for \"datetime, nvarchar, text\""))
+	FString String;
+
+	UPROPERTY(BlueprintReadOnly, meta = (ToolTip = "Use it for \"int32\""))
+	int32 Integer32 = 0;
+
+	UPROPERTY(BlueprintReadOnly, meta = (ToolTip = "Use it for \"int32\""))
+	int64 Integer64 = 0;
 
 	UPROPERTY(BlueprintReadOnly, meta = (ToolTip = ""))
-	int32 ValInt32 = 0;
+	double Double = (double)0.f;
 
 	UPROPERTY(BlueprintReadOnly, meta = (ToolTip = ""))
-	double ValDouble = 0.f;
+	bool Bool = false;
 
 	UPROPERTY(BlueprintReadOnly, meta = (ToolTip = ""))
-	bool ValBool = false;
-
-	UPROPERTY(BlueprintReadOnly, meta = (ToolTip = ""))
-	FDateTime ValDateTime;
+	FDateTime DateTime;
 
 	UPROPERTY(BlueprintReadOnly, meta = (ToolTip = ""))
 	int32 DataType = 0;
@@ -124,7 +127,7 @@ class FF_DB_SAP_ODBC_API USAP_ODBC_Result : public UObject
 protected:
 
 	int32 RowCount = 0;
-	TSharedPtr<odbc::ResultSetRef> QueryResult;
+	odbc::ResultSetRef QueryResult;
 	TMap<FVector2D, FSAP_ODBC_DataValue> All_Data;
 
 public:

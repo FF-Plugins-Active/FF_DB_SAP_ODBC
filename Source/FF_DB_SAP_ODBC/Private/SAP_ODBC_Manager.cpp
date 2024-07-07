@@ -44,33 +44,39 @@ bool ASAP_ODBC_Manager::SAP_ODBC_Connection_Create(FString& Out_Code, USAP_ODBC_
 {
 	if (In_Server.IsEmpty())
 	{
-		Out_Code = "Server address should not be empty !";
+		Out_Code = "FF SAP ODBC : Server address should not be empty !";
 		return false;
 	}
 
 	if (In_UserName.IsEmpty())
 	{
-		Out_Code = "User name should not be empty !";
+		Out_Code = "FF SAP ODBC : User name should not be empty !";
 		return false;
 	}
 
 	if (this->SAP_ODBC_Environment.isNull())
 	{
-		Out_Code = "You have to create ODBC environment first !";
+		Out_Code = "FF SAP ODBC : You have to create ODBC environment first !";
 		return false;
 	}
 
 	odbc::ConnectionRef ConnectionRef = this->SAP_ODBC_Environment->createConnection();
 	if (ConnectionRef.isNull())
 	{
-		Out_Code = "There is a problem while creating ODBC Connection referance !";
+		Out_Code = "FF SAP ODBC : There is a problem while creating ODBC Connection referance !";
 		return false;
 	}
 
 	const FString ConnectionId = In_Server + "&&" + In_UserName;
-
 	USAP_ODBC_Connection* Connection_Object = NewObject<USAP_ODBC_Connection>();
+
 	if (!Connection_Object->SetConnection(ConnectionRef, ConnectionId))
+	{
+		Out_Code = "FF SAP ODBC : There was a problem while setting connection referance and id to connection object !";
+		return false;
+	}
+
+	if (!Connection_Object->Connection_Start(Out_Code, In_Server, In_UserName, In_Password, bUseAutoCommit))
 	{
 		return false;
 	}
@@ -78,6 +84,7 @@ bool ASAP_ODBC_Manager::SAP_ODBC_Connection_Create(FString& Out_Code, USAP_ODBC_
 	CreatedConnection = Connection_Object;
 	this->MAP_Connections.Add(ConnectionId, Connection_Object);
 	
+	Out_Code = "FF SAP ODBC : Connection established successfully !";
 	return true;
 }
 
@@ -85,6 +92,7 @@ bool ASAP_ODBC_Manager::SAP_ODBC_Connection_Delete_Id(FString& Out_Code, FString
 {
 	if (ConnectionId.IsEmpty())
 	{
+		Out_Code = "FF SAP ODBC : Connection Id shouldn't empty !";
 		return false;
 	}
 
@@ -92,21 +100,32 @@ bool ASAP_ODBC_Manager::SAP_ODBC_Connection_Delete_Id(FString& Out_Code, FString
 
 	if (!IsValid(TargetConnection))
 	{
+		Out_Code = "FF SAP ODBC : Target connection object is not valid !";
+		return false;
+	}
+
+	if (TargetConnection->IsConnectionValid())
+	{
+		Out_Code = "FF SAP ODBC : Connection reference is not valid !";
 		return false;
 	}
 	
-	if (TargetConnection->IsConnectionValid())
+	MAP_Connections.Remove(ConnectionId);
+	FString TempCode;
+
+	if (!TargetConnection->Connection_Stop(TempCode))
 	{
-		Out_Code = "Connection reference is not valid !";
+		Out_Code = TempCode;
 		return false;
 	}
 
-	FString Out_Code_Stop;
-	TargetConnection->Connection_Stop(Out_Code_Stop);
+	if (!TargetConnection->Connection_Delete(Out_Code))
+	{
+		Out_Code = TempCode;
+		return false;
+	}
 
-	MAP_Connections.Remove(ConnectionId);
-
-	Out_Code = "Connection successfully deleted !";
+	Out_Code = "FF SAP ODBC : Connection successfully deleted !";
 	return true;
 }
 
@@ -114,21 +133,34 @@ bool ASAP_ODBC_Manager::SAP_ODBC_Connection_Delete_Object(FString& Out_Code, UPA
 {
 	if (!IsValid(TargetConnection))
 	{
+		Out_Code = "FF SAP ODBC : Target connection object is not valid !";
 		return false;
 	}
 
 	if (TargetConnection->IsConnectionValid())
 	{
-		Out_Code = "Connection reference is not valid !";
+		Out_Code = "FF SAP ODBC : Connection reference is not valid !";
 		return false;
 	}
 
-	FString Out_Code_Stop;
-	TargetConnection->Connection_Stop(Out_Code_Stop);
+	const FString ConnectionId = TargetConnection->GetConnectionId();
+	this->MAP_Connections.Remove(ConnectionId);
+	FString TempCode;
+
+	if (!TargetConnection->Connection_Stop(TempCode))
+	{
+		Out_Code = TempCode;
+		return false;
+	}
+
+	if (!TargetConnection->Connection_Delete(Out_Code))
+	{
+		Out_Code = TempCode;
+		return false;
+	}
 	
-	this->MAP_Connections.Remove(TargetConnection->GetConnectionId());
 	TargetConnection = nullptr;
 
-	Out_Code = "Connection successfully deleted !";
+	Out_Code = "FF SAP ODBC : Connection successfully deleted !";
 	return true;
 }

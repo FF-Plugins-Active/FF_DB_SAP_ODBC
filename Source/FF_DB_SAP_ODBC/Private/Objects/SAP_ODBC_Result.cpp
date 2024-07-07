@@ -29,38 +29,130 @@ bool USAP_ODBC_Result::SetQueryResult(FString& Out_Code, odbc::ResultSetRef Resu
 				EachData.DataTypeName = DataTypeName;
 				EachData.ColumnName = ColumnName;
 
-				if (DataType == 4)
+				switch (DataType)
 				{
-					odbc::Int TempInt = ResultReferance->getInt(Index_Column);
-
-					if (!TempInt.isNull())
+					case -9:
 					{
-						EachData.ValInt32 = *TempInt;
-						EachData.Preview = FString::FromInt(*TempInt);
+						// NVARCHAR & DATE & TIME
+
+						odbc::String TempStringRaw = ResultReferance->getString(Index_Column);
+
+						if (!TempStringRaw.isNull())
+						{
+							FString TempString = UTF8_TO_TCHAR(TempStringRaw->c_str());
+							EachData.String = TempString;
+							EachData.Preview = TempString;
+						}
+
+						break;
 					}
-				}
 
-				if (DataType == 6)
-				{
-					odbc::Double TempDouble = ResultReferance->getDouble(Index_Column);
-
-					if (!TempDouble.isNull())
+					case -5:
 					{
-						EachData.ValDouble = *TempDouble;
-						EachData.Preview = FString::SanitizeFloat(*TempDouble);
+						// INT64 & BIGINT
+
+						odbc::Long TempLong = ResultReferance->getLong(Index_Column);
+
+						if (!TempLong.isNull())
+						{
+							EachData.Integer64 = *TempLong;
+							EachData.Preview = FString::FromInt(EachData.Integer64);
+						}
+
+						break;
 					}
-				}
 
-				// MSSQL's "time" dateType is an nvarchar, too.
-				if (DataType == -9 || DataType == -1)
-				{
-					odbc::String TempStringRaw = ResultReferance->getString(Index_Column);
-
-					if (!TempStringRaw.isNull())
+					case -2:
 					{
-						FString TempString = UTF8_TO_TCHAR(TempStringRaw->c_str());
-						EachData.ValString = TempString;
-						EachData.Preview = TempString;
+						// TIMESTAMP: odbc::timestamp is not SQL timestamp. We use it to check if rows changed since last retriving or not.
+						
+						odbc::String RawString = ResultReferance->getString(Index_Column);
+						
+						if (!RawString.isNull())
+						{
+							std::string TimeStampString = RawString->c_str();
+							unsigned int TimeStampInt = std::stoul(TimeStampString, nullptr, 16);
+
+							EachData.Integer64 = TimeStampInt;
+							EachData.Preview = (FString)TimeStampString.c_str() + " - " + FString::FromInt(TimeStampInt);
+						}
+						
+						break;
+					}
+
+					case -1:
+					{
+						// TEXT
+
+						odbc::String TempStringRaw = ResultReferance->getString(Index_Column);
+
+						if (!TempStringRaw.isNull())
+						{
+							FString TempString = UTF8_TO_TCHAR(TempStringRaw->c_str());
+							EachData.String = TempString;
+							EachData.Preview = TempString;
+						}
+
+						break;
+					}
+
+					case 4:
+					{
+						// INT32
+
+						odbc::Int TempInt = ResultReferance->getInt(Index_Column);
+
+						if (!TempInt.isNull())
+						{
+							EachData.Integer32 = *TempInt;
+							EachData.Preview = FString::FromInt(*TempInt);
+						}
+
+						break;
+					}
+
+					case 6:
+					{
+						// FLOAT & DOUBLE
+
+						odbc::Double TempDouble = ResultReferance->getDouble(Index_Column);
+
+						if (!TempDouble.isNull())
+						{
+							EachData.Double = *TempDouble;
+							EachData.Preview = FString::SanitizeFloat(*TempDouble);
+						}
+
+						break;
+					}
+
+					case 9:
+					{
+						// DATETIME : SAP ODBC gives "9" as datatype of DateTime.
+
+						odbc::Timestamp TempDateTime = ResultReferance->getTimestamp(Index_Column);
+
+						if (!TempDateTime.isNull())
+						{
+							int32 Year = TempDateTime->year();
+							int32 Month = TempDateTime->month();
+							int32 Day = TempDateTime->day();
+							int32 Hours = TempDateTime->hour();
+							int32 Minutes = TempDateTime->minute();
+							int32 Seconds = TempDateTime->second();
+							int32 Milliseconds = TempDateTime->milliseconds();
+
+							EachData.DateTime = FDateTime(Year, Month, Day, Hours, Minutes, Seconds, Milliseconds);
+							EachData.Preview = FString::Printf(TEXT("%d-%d-%d %d:%d:%d:%d"), Year, Month, Day, Hours, Minutes, Seconds, Milliseconds);
+						}
+
+						break;
+					}
+
+					default:
+					{
+						EachData.Note = "Currently there is no parser for this data type. Please convert it to another known type in your query !";
+						break;
 					}
 				}
 
@@ -77,7 +169,7 @@ bool USAP_ODBC_Result::SetQueryResult(FString& Out_Code, odbc::ResultSetRef Resu
 		return false;
 	}
 
-	this->QueryResult = MakeShared<odbc::ResultSetRef>(ResultReferance);
+	this->QueryResult = ResultReferance;
 	this->All_Data = Temp_Data;
 	this->RowCount = Index_Row;
 
@@ -86,17 +178,17 @@ bool USAP_ODBC_Result::SetQueryResult(FString& Out_Code, odbc::ResultSetRef Resu
 
 int32 USAP_ODBC_Result::GetColumnCount()
 {
-	if (this->QueryResult->isNull())
+	if (this->QueryResult.isNull())
 	{
 		return 0;
 	}
 
-	return this->QueryResult->get()->getMetaData()->getColumnCount();
+	return this->QueryResult->getMetaData()->getColumnCount();
 }
 
 int32 USAP_ODBC_Result::GetRowCount(int32& LastIndex)
 {
-	if (this->QueryResult->isNull())
+	if (this->QueryResult.isNull())
 	{
 		return 0;
 	}
@@ -115,12 +207,12 @@ bool USAP_ODBC_Result::GetMetaData(FString& Out_Code, FSAP_ODBC_MetaData& Out_Me
 
 	try
 	{
-		Result = this->QueryResult->get()->getMetaData().get();
+		Result = this->QueryResult->getMetaData().get();
 	}
 
 	catch (const std::exception& Exception)
 	{
-		Out_Code = Exception.what();
+		Out_Code = (FString)"FF SAP ODBC : " + Exception.what();
 		return false;
 	}
 
@@ -175,7 +267,7 @@ bool USAP_ODBC_Result::GetDataFromRow(FString& Out_Code, TArray<FSAP_ODBC_DataVa
 
 	try
 	{
-		const int32 ColumnCount = this->QueryResult->get()->getMetaData()->getColumnCount();
+		const int32 ColumnCount = this->QueryResult->getMetaData()->getColumnCount();
 		TArray<FSAP_ODBC_DataValue> Temp_Array;
 
 		for (int32 Index_Column = 0; Index_Column < ColumnCount; Index_Column++)
@@ -199,7 +291,7 @@ bool USAP_ODBC_Result::GetDataFromColumnIndex(FString& Out_Code, TArray<FSAP_ODB
 {
 	if (this->All_Data.IsEmpty())
 	{
-		Out_Code = "Data pool is empty !";
+		Out_Code = "FF SAP ODBC : Data pool is empty !";
 		return false;
 	}
 
@@ -218,12 +310,12 @@ bool USAP_ODBC_Result::GetDataFromColumnName(FString& Out_Code, TArray<FSAP_ODBC
 {
 	if (this->All_Data.IsEmpty())
 	{
-		Out_Code = "Data pool is empty !";
+		Out_Code = "FF SAP ODBC : Data pool is empty !";
 		return false;
 	}
 
 	int32 TargetColumnIndex = 0;
-	odbc::ResultSetMetaDataRef MetaDataRef = this->QueryResult->get()->getMetaData();
+	odbc::ResultSetMetaDataRef MetaDataRef = this->QueryResult->getMetaData();
 	const int32 ColumnCount = MetaDataRef->getColumnCount();
 
 	for (int32 Index_Column = 1; Index_Column < ColumnCount + 1; Index_Column++)
@@ -252,7 +344,7 @@ bool USAP_ODBC_Result::GetSingleData(FString& Out_Code, FSAP_ODBC_DataValue& Out
 {
 	if (this->All_Data.IsEmpty())
 	{
-		Out_Code = "Data pool is empty !";
+		Out_Code = "FF SAP ODBC : Data pool is empty !";
 		return false;
 	}
 
@@ -266,7 +358,7 @@ bool USAP_ODBC_Result::GetSingleData(FString& Out_Code, FSAP_ODBC_DataValue& Out
 
 	else
 	{
-		Out_Code = "No data found !";
+		Out_Code = "FF SAP ODBC : No data found !";
 		return false;
 	}
 }

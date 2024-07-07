@@ -14,8 +14,8 @@ class FF_DB_SAP_ODBC_API USAP_ODBC_Statement : public UObject
 
 public:
 
-	TSharedPtr<odbc::ConnectionRef> Connection;
-	TSharedPtr<odbc::PreparedStatementRef> Statement;
+	odbc::ConnectionRef Connection;
+	odbc::PreparedStatementRef Statement;
 
 	UFUNCTION(BlueprintCallable)
 	virtual void SetInt(int32 Value, int32 ParamIndex = 1);

@@ -22,16 +22,22 @@ public:
 
 	virtual odbc::ConnectionRef GetConenction();
 	virtual bool SetConnection(odbc::ConnectionRef In_Ref, const FString In_Id);
-	virtual bool Connection_Start(FString& Out_Code, FString In_Server, FString In_UserName, FString In_Password, bool bUseAutoCommit);
-	virtual bool Connection_Stop(FString& Out_Code);
-	virtual bool Connection_Delete(FString& Out_Code);
-	
+
 	UFUNCTION(BlueprintPure)
 	virtual bool IsConnectionValid();
 
 	UFUNCTION(BlueprintPure)
 	virtual FString GetConnectionId();
 
+	UFUNCTION(BlueprintCallable)
+	virtual bool Connection_Start(FString& Out_Code, FString In_Server, FString In_UserName, FString In_Password, bool bUseAutoCommit);
+	
+	UFUNCTION(BlueprintCallable)
+	virtual bool Connection_Stop(FString& Out_Code);
+	
+	UFUNCTION(BlueprintCallable)
+	virtual bool Connection_Delete(FString& Out_Code);
+	
 	UFUNCTION(BlueprintCallable)
 	virtual bool PrepareStatement(FString& Out_Code, USAP_ODBC_Statement*& Out_Statement, FString SQL_Statement);
 

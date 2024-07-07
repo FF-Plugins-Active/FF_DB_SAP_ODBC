@@ -5,6 +5,7 @@
 #include "JsonUtilities.h"
 
 #include "Kismet/KismetMathLibrary.h"
+#include "Kismet/KismetStringLibrary.h"
 
 THIRD_PARTY_INCLUDES_START
 
@@ -26,5 +27,7 @@ THIRD_PARTY_INCLUDES_START
 #include "odbc/StringConverter.h"
 #include "odbc/Types.h"
 #include "odbc/Util.h"
+
+#include <string>
 
 THIRD_PARTY_INCLUDES_END

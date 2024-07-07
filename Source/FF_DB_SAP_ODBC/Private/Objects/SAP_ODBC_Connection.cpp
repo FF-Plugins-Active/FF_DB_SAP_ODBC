@@ -14,6 +14,7 @@ bool USAP_ODBC_Connection::SetConnection(odbc::ConnectionRef In_Ref, const FStri
 
 	this->Connection = In_Ref;
 	this->ConnectionId = In_Id;
+
 	return true;
 }
 
@@ -24,7 +25,7 @@ odbc::ConnectionRef USAP_ODBC_Connection::GetConenction()
 		return nullptr;
 	}
 
-	return nullptr;
+	return this->Connection;
 }
 
 bool USAP_ODBC_Connection::IsConnectionValid()
@@ -41,13 +42,13 @@ bool USAP_ODBC_Connection::Connection_Start(FString& Out_Code, FString In_Server
 {
 	if (this->Connection.isNull())
 	{
-		Out_Code = "Connection referance is null !";
+		Out_Code = "FF SAP ODBC : Connection referance is null !";
 		return false;
 	}
 
 	if (this->Connection->connected() && this->Connection->isValid())
 	{
-		Out_Code = "There is an already active connection !";
+		Out_Code = "FF SAP ODBC : There is an already active connection !";
 		return false;
 	}
 
@@ -62,11 +63,11 @@ bool USAP_ODBC_Connection::Connection_Start(FString& Out_Code, FString In_Server
 	
 	catch (const std::exception& Exception)
 	{
-		Out_Code = Exception.what();
+		Out_Code = "FF SAP ODBC : Connection couldn't established !" + (FString)Exception.what();
 		return false;
 	}
 
-	Out_Code  = bConnectionStatus ? "Connection successfully started." : "Connection couldn't established !";
+	Out_Code  = bConnectionStatus ? "FF SAP ODBC : Connection successfully started." : "FF SAP ODBC : Connection couldn't established !";
 	return bConnectionStatus;
 }
 
@@ -112,36 +113,46 @@ bool USAP_ODBC_Connection::Connection_Delete(FString& Out_Code)
 
 bool USAP_ODBC_Connection::PrepareStatement(FString& Out_Code, USAP_ODBC_Statement*& Out_Statement, FString SQL_Statement)
 {
-	if (this->Connection.isNull())
+	try
 	{
-		Out_Code = "Connection reference is NULL !";
+		if (this->Connection.isNull())
+		{
+			Out_Code = "FF SAP ODBC : Connection reference is NULL !";
+			return false;
+		}
+
+		if (!this->Connection->isValid())
+		{
+			Out_Code = "FF SAP ODBC : Connection reference is not valid !";
+			return false;
+		}
+
+		if (!this->Connection->connected())
+		{
+			Out_Code = "FF SAP ODBC : There is no active connection !";
+			return false;
+		}
+
+		odbc::PreparedStatementRef TempStatement = this->Connection->prepareStatement(reinterpret_cast<char16_t*>(TCHAR_TO_UTF16(*SQL_Statement)));
+
+		if (TempStatement.isNull())
+		{
+			Out_Code = "FF SAP ODBC : There is a problem while preparing statement !";
+			return false;
+		}
+
+		Out_Statement = NewObject<USAP_ODBC_Statement>();
+		Out_Statement->Statement = TempStatement;
+		Out_Statement->Connection = this->Connection;
+	}
+
+	catch (const std::exception& Exception)
+	{
+		//FString ExceptionString = Exception.what();
+		Out_Code = (FString)"FF SAP ODBC : " + Exception.what();
 		return false;
 	}
 
-	if (!this->Connection->isValid())
-	{
-		Out_Code = "Connection reference is not valid !";
-		return false;
-	}
-
-	if (!this->Connection->connected())
-	{
-		Out_Code = "There is no active connection !";
-		return false;
-	}
-
-	odbc::PreparedStatementRef TempStatement = this->Connection->prepareStatement(reinterpret_cast<char16_t*>(TCHAR_TO_UTF16(*SQL_Statement)));
-	
-	if (TempStatement.isNull())
-	{
-		Out_Code = "There is a problem while preparing statement !";
-		return false;
-	}
-
-	Out_Statement = NewObject<USAP_ODBC_Statement>();
-	Out_Statement->Statement = MakeShared<odbc::PreparedStatementRef>(TempStatement);
-	Out_Statement->Connection = MakeShared< odbc::ConnectionRef>(this->Connection);
-
-	Out_Code = "Statement successfully created !";
+	Out_Code = "FF SAP ODBC : Statement successfully created !";
 	return true;
 }

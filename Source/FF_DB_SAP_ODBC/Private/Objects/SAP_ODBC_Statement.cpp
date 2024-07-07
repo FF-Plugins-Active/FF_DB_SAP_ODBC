@@ -2,64 +2,44 @@
 
 void USAP_ODBC_Statement::SetInt(int32 Value, int32 ParamIndex)
 {
-	if (!this->Statement.IsValid())
+	if (this->Statement.isNull())
 	{
 		return;
 	}
 
-	if (this->Statement->isNull())
-	{
-		return;
-	}
-
-	this->Statement->get()->setInt(ParamIndex, Value);
+	this->Statement->setInt(ParamIndex, Value);
 }
 
 void USAP_ODBC_Statement::SetString(FString Value, int32 ParamIndex)
 {
-	if (!this->Statement.IsValid())
+	if (this->Statement.isNull())
 	{
 		return;
 	}
 
-	if (this->Statement->isNull())
-	{
-		return;
-	}
-
-	this->Statement->get()->setCString(ParamIndex, TCHAR_TO_UTF8(*Value));
+	this->Statement->setCString(ParamIndex, TCHAR_TO_UTF8(*Value));
 }
 
 void USAP_ODBC_Statement::AddBatch()
 {
-	if (!this->Statement.IsValid())
+	if (this->Statement.isNull())
 	{
 		return;
 	}
 
-	if (this->Statement->isNull())
-	{
-		return;
-	}
-
-	this->Statement->get()->addBatch();
+	this->Statement->addBatch();
 }
 
 void USAP_ODBC_Statement::ExecuteBatch(FString& Out_Code)
 {
-	if (!this->Statement.IsValid())
-	{
-		return;
-	}
-
-	if (this->Statement->isNull())
+	if (this->Statement.isNull())
 	{
 		return;
 	}
 
 	try
 	{
-		this->Statement->get()->executeBatch();
+		this->Statement->executeBatch();
 	}
 
 	catch (const std::exception& Exception)
@@ -70,45 +50,35 @@ void USAP_ODBC_Statement::ExecuteBatch(FString& Out_Code)
 
 bool USAP_ODBC_Statement::CommitStatement(FString& Out_Code)
 {
-	if (!this->Connection.IsValid())
+	if (this->Connection.isNull())
 	{
-		Out_Code = "Connection pointer is not valid !";
+		Out_Code = "FF SAP ODBC :  Connection reference is NULL !";
 		return false;
 	}
 
-	if (this->Connection->isNull())
+	if (!this->Connection->isValid())
 	{
-		Out_Code = "Connection reference is NULL !";
+		Out_Code = "FF SAP ODBC : Connection reference is not valid !";
 		return false;
 	}
 
-	if (!this->Connection->get()->isValid())
+	if (!this->Connection->connected())
 	{
-		Out_Code = "Connection reference is not valid !";
+		Out_Code = "FF SAP ODBC : There is no active connection !";
 		return false;
 	}
 
-	if (!this->Connection->get()->connected())
-	{
-		Out_Code = "There is no active connection !";
-		return false;
-	}
+	this->Connection->commit();
 
-	this->Connection->get()->commit();
-
-	Out_Code = "Statement successfully commited !";
+	Out_Code = "FF SAP ODBC : Statement successfully commited !";
 	return true;
 }
 
 bool USAP_ODBC_Statement::ExecuteQuery(FString& Out_Code, USAP_ODBC_Result*& Out_Result)
 {
-	if (!this->Statement.IsValid())
+	if (this->Statement.isNull())
 	{
-		return false;
-	}
-
-	if (this->Statement->isNull())
-	{
+		Out_Code = "FF SAP ODBC : Statement object is null !";
 		return false;;
 	}
 
@@ -116,7 +86,7 @@ bool USAP_ODBC_Statement::ExecuteQuery(FString& Out_Code, USAP_ODBC_Result*& Out
 
 	try
 	{
-		QueryResult = this->Statement->get()->executeQuery();
+		QueryResult = this->Statement->executeQuery();
 	}
 
 	catch (const std::exception& Exception)
