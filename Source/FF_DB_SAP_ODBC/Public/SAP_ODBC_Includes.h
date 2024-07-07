@@ -1,5 +1,11 @@
 #pragma once
 
+// UE Includes.
+#include "JsonObjectWrapper.h"
+#include "JsonUtilities.h"
+
+#include "Kismet/KismetMathLibrary.h"
+
 THIRD_PARTY_INCLUDES_START
 
 #include "odbc/Connection.h"

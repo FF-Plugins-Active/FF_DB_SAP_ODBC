@@ -5,7 +5,7 @@
 #include "Kismet/BlueprintFunctionLibrary.h"
 
 // Custom Includes
-#include "SAP_ODBC_Connection.h"
+#include "Objects/SAP_ODBC_Connection.h"
 
 #include "SAP_ODBC_BPLibrary.generated.h"
 

@@ -1,7 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "SAP_ODBC_BPLibrary.h"
-#include "FF_DB_SAPODBC.h"
+#include "FF_DB_SAP_ODBC.h"
 
 USAP_ODBC_BPLibrary::USAP_ODBC_BPLibrary(const FObjectInitializer& ObjectInitializer)
 : Super(ObjectInitializer)

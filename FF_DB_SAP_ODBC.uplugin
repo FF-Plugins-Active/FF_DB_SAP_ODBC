@@ -19,7 +19,7 @@
 	],
 	"Modules": [
 		{
-			"Name": "FF_DB_SAPODBC",
+			"Name": "FF_DB_SAP_ODBC",
 			"Type": "Runtime",
 			"LoadingPhase": "PreLoadingScreen"
 		}

@@ -1,6 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "SAP_ODBC_Thread.h"
+#include "Objects/SAP_ODBC_Thread.h"
 #include "SAP_ODBC_Manager.h"
 
 // UE Includes.

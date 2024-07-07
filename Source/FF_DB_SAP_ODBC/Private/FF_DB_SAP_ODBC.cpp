@@ -1,13 +1,13 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "FF_DB_SAPODBC.h"
+#include "FF_DB_SAP_ODBC.h"
 #include "Interfaces/IPluginManager.h"
 
-#define LOCTEXT_NAMESPACE "FFF_DB_SAPODBCModule"
+#define LOCTEXT_NAMESPACE "FFF_DB_SAP_ODBCModule"
 
-void FFF_DB_SAPODBCModule::StartupModule()
+void FFF_DB_SAP_ODBCModule::StartupModule()
 {
-	const FString DLL_SAP_ODBC = FPaths::Combine(*IPluginManager::Get().FindPlugin("FF_DB_SAPODBC")->GetBaseDir(), TEXT("Source/FF_DB_SAPODBC/ThirdParty/sap_odbc/Win64/lib/odbccpp.dll"));
+	const FString DLL_SAP_ODBC = FPaths::Combine(*IPluginManager::Get().FindPlugin("FF_DB_SAP_ODBC")->GetBaseDir(), TEXT("Source/FF_DB_SAP_ODBC/ThirdParty/sap_odbc/Win64/lib/odbccpp.dll"));
 
 	if (!FPaths::FileExists(DLL_SAP_ODBC))
 	{
@@ -27,7 +27,7 @@ void FFF_DB_SAPODBCModule::StartupModule()
 	}
 }
 
-void FFF_DB_SAPODBCModule::ShutdownModule()
+void FFF_DB_SAP_ODBCModule::ShutdownModule()
 {
 	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
 	// we call this function before unloading the module.
@@ -41,4 +41,4 @@ void FFF_DB_SAPODBCModule::ShutdownModule()
 
 #undef LOCTEXT_NAMESPACE
 	
-IMPLEMENT_MODULE(FFF_DB_SAPODBCModule, FF_DB_SAPODBC)
+IMPLEMENT_MODULE(FFF_DB_SAP_ODBCModule, FF_DB_SAP_ODBC)

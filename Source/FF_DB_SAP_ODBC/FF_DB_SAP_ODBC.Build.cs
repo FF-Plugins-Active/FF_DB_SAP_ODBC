@@ -4,16 +4,14 @@ using System;
 using System.IO;
 using UnrealBuildTool;
 
-public class FF_DB_SAPODBC : ModuleRules
+public class FF_DB_SAP_ODBC : ModuleRules
 {
-	public FF_DB_SAPODBC(ReadOnlyTargetRules Target) : base(Target)
+	public FF_DB_SAP_ODBC(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 
         if (UnrealTargetPlatform.Win64 == Target.Platform)
         {
-			// SAP ODBC
-
             PublicIncludePaths.Add(Path.Combine(ModuleDirectory, "ThirdParty", "sap_odbc", "Win64", "include"));
             PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, "ThirdParty", "sap_odbc", "Win64", "lib", "odbccpp.lib"));
             RuntimeDependencies.Add(Path.Combine(ModuleDirectory, "ThirdParty", "sap_odbc", "Win64", "lib", "odbccpp.dll"));

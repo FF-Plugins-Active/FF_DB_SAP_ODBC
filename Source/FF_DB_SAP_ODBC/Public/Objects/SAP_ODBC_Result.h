@@ -2,44 +2,51 @@
 
 #include "CoreMinimal.h"
 
-// UE Includes.
-#include "JsonObjectWrapper.h"
-#include "JsonUtilities.h"
-
-// Custom Includes.
 #include "SAP_ODBC_Includes.h"
 
-#include "SAP_ODBC_Connection.generated.h"
+#include "SAP_ODBC_Result.generated.h"
 
 USTRUCT(BlueprintType)
-struct FF_DB_SAPODBC_API FSAP_ODBC_DataValue
+struct FF_DB_SAP_ODBC_API FSAP_ODBC_DataValue
 {
 	GENERATED_BODY()
 
 public:
 
+	UPROPERTY(BlueprintReadOnly, meta = (ToolTip = ""))
 	FString ValString;
+
+	UPROPERTY(BlueprintReadOnly, meta = (ToolTip = ""))
 	int32 ValInt32 = 0;
+
+	UPROPERTY(BlueprintReadOnly, meta = (ToolTip = ""))
 	double ValDouble = 0.f;
+
+	UPROPERTY(BlueprintReadOnly, meta = (ToolTip = ""))
 	bool ValBool = false;
+
+	UPROPERTY(BlueprintReadOnly, meta = (ToolTip = ""))
 	FDateTime ValDateTime;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, meta = (ToolTip = ""))
 	int32 DataType = 0;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, meta = (ToolTip = ""))
 	FString DataTypeName;
 
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly, meta = (ToolTip = ""))
 	FString ColumnName;
 
-	UPROPERTY(BlueprintReadOnly)
-	FString ValueRepresentation;
+	UPROPERTY(BlueprintReadOnly, meta = (ToolTip = ""))
+	FString Preview;
+
+	UPROPERTY(BlueprintReadOnly, meta = (ToolTip = ""))
+	FString Note;
 
 };
 
 USTRUCT(BlueprintType)
-struct FF_DB_SAPODBC_API FSAP_ODBC_MetaData
+struct FF_DB_SAP_ODBC_API FSAP_ODBC_MetaData
 {
 	GENERATED_BODY()
 
@@ -109,68 +116,8 @@ public:
 	bool bIsSigned = false;
 };
 
-
 UCLASS(BlueprintType)
-class FF_DB_SAPODBC_API USAP_ODBC_Connection : public UObject
-{
-	GENERATED_BODY()
-
-private:
-
-	FString ConnectionId;
-	odbc::ConnectionRef Connection;
-
-public:
-
-	virtual odbc::ConnectionRef GetConenction();
-	virtual bool SetConnection(odbc::ConnectionRef In_Ref);
-	virtual bool SetConnectionId(FString In_Id);
-	virtual bool Connection_Start(FString& Out_Code, FString In_Server, FString In_UserName, FString In_Password, bool bUseAutoCommit);
-	virtual bool Connection_Stop(FString& Out_Code);
-	
-	UFUNCTION(BlueprintPure)
-	virtual bool IsConnectionValid();
-
-	UFUNCTION(BlueprintPure)
-	virtual FString GetConnectionId();
-
-	UFUNCTION(BlueprintCallable)
-	virtual bool PrepareStatement(FString& Out_Code, USAP_ODBC_Statement*& Out_Statement, FString SQL_Statement);
-
-};
-
-UCLASS(BlueprintType)
-class FF_DB_SAPODBC_API USAP_ODBC_Statement : public UObject
-{
-	GENERATED_BODY()
-
-public:
-
-	TSharedPtr<odbc::ConnectionRef> Connection;
-	TSharedPtr<odbc::PreparedStatementRef> Statement;
-
-	UFUNCTION(BlueprintCallable)
-	virtual void SetInt(int32 Value, int32 ParamIndex = 1);
-
-	UFUNCTION(BlueprintCallable)
-	virtual void SetString(FString Value, int32 ParamIndex = 1);
-
-	UFUNCTION(BlueprintCallable)
-	virtual void AddBatch();
-
-	UFUNCTION(BlueprintCallable)
-	virtual void ExecuteBatch(FString& Out_Code);
-
-	UFUNCTION(BlueprintCallable)
-	virtual bool CommitStatement(FString& Out_Code);
-
-	UFUNCTION(BlueprintCallable)
-	virtual bool ExecuteQuery(FString& Out_Code, USAP_ODBC_Result*& Out_Result);
-
-};
-
-UCLASS(BlueprintType)
-class FF_DB_SAPODBC_API USAP_ODBC_Result : public UObject
+class FF_DB_SAP_ODBC_API USAP_ODBC_Result : public UObject
 {
 	GENERATED_BODY()
 

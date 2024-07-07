@@ -67,19 +67,10 @@ bool ASAP_ODBC_Manager::SAP_ODBC_Connection_Create(FString& Out_Code, USAP_ODBC_
 		return false;
 	}
 
+	const FString ConnectionId = In_Server + "&&" + In_UserName;
+
 	USAP_ODBC_Connection* Connection_Object = NewObject<USAP_ODBC_Connection>();
-	if (!Connection_Object->SetConnection(ConnectionRef))
-	{
-		return false;
-	}
-
-	FString ConnectionId = In_Server + "&&" + In_UserName;
-	if (!Connection_Object->SetConnectionId(ConnectionId))
-	{
-		return false;
-	}
-
-	if (!Connection_Object->Connection_Start(Out_Code, In_Server, In_UserName, In_Password, bUseAutoCommit))
+	if (!Connection_Object->SetConnection(ConnectionRef, ConnectionId))
 	{
 		return false;
 	}

@@ -1,293 +1,4 @@
-#include "SAP_ODBC_Connection.h"
-
-// UE Includes.
-#include "Kismet/KismetMathLibrary.h"
-
-// CONNECTION.
-
-bool USAP_ODBC_Connection::SetConnection(odbc::ConnectionRef In_Ref)
-{
-	if (In_Ref.isNull())
-	{
-		return false;
-	}
-
-	this->Connection = In_Ref;
-	return true;
-}
-
-odbc::ConnectionRef USAP_ODBC_Connection::GetConenction()
-{
-	if (this->Connection.isNull())
-	{
-		return nullptr;
-	}
-
-	return nullptr;
-}
-
-bool USAP_ODBC_Connection::SetConnectionId(FString In_Id)
-{
-	if (In_Id.IsEmpty())
-	{
-		return false;
-	}
-
-	if (!this->ConnectionId.IsEmpty())
-	{
-		return false;
-	}
-
-	this->ConnectionId = In_Id;
-	return true;
-}
-
-bool USAP_ODBC_Connection::IsConnectionValid()
-{
-	return this->Connection.isNull();
-}
-
-FString USAP_ODBC_Connection::GetConnectionId()
-{
-	return this->ConnectionId;
-}
-
-bool USAP_ODBC_Connection::Connection_Start(FString& Out_Code, FString In_Server, FString In_UserName, FString In_Password, bool bUseAutoCommit)
-{
-	if (this->Connection.isNull())
-	{
-		Out_Code = "Connection referance is null !";
-		return false;
-	}
-
-	if (this->Connection->connected() && this->Connection->isValid())
-	{
-		Out_Code = "There is an already active connection !";
-		return false;
-	}
-
-	bool bConnectionStatus = false;
-
-	try
-	{
-		this->Connection->connect(TCHAR_TO_ANSI(*In_Server), TCHAR_TO_ANSI(*In_UserName), TCHAR_TO_ANSI(*In_Password));
-		this->Connection->setAutoCommit(bUseAutoCommit);
-		bConnectionStatus = this->Connection->connected();
-	}
-	
-	catch (const std::exception& Exception)
-	{
-		Out_Code = Exception.what();
-		return false;
-	}
-
-	Out_Code  = bConnectionStatus ? "Connection successfully started." : "Connection couldn't established !";
-	return bConnectionStatus;
-}
-
-bool USAP_ODBC_Connection::Connection_Stop(FString& Out_Code)
-{
-	if (this->Connection.isNull())
-	{
-		Out_Code = "Connection reference is NULL !";
-		return false;
-	}
-
-	if (!this->Connection->isValid())
-	{
-		Out_Code = "Connection reference is not valid !";
-		return false;
-	}
-
-	if (!this->Connection->connected())
-	{
-		Out_Code = "There is no active connection !";
-		return false;
-	}
-
-	this->Connection->disconnect();
-	this->Connection.reset();
-	this->Connection = nullptr;
-	
-	Out_Code = "Connection successfull stopped.";
-	return true;
-}
-
-bool USAP_ODBC_Connection::PrepareStatement(FString& Out_Code, USAP_ODBC_Statement*& Out_Statement, FString SQL_Statement)
-{
-	if (this->Connection.isNull())
-	{
-		Out_Code = "Connection reference is NULL !";
-		return false;
-	}
-
-	if (!this->Connection->isValid())
-	{
-		Out_Code = "Connection reference is not valid !";
-		return false;
-	}
-
-	if (!this->Connection->connected())
-	{
-		Out_Code = "There is no active connection !";
-		return false;
-	}
-
-	odbc::PreparedStatementRef TempStatement = this->Connection->prepareStatement(reinterpret_cast<char16_t*>(TCHAR_TO_UTF16(*SQL_Statement)));
-	
-	if (TempStatement.isNull())
-	{
-		Out_Code = "There is a problem while preparing statement !";
-		return false;
-	}
-
-	Out_Statement = NewObject<USAP_ODBC_Statement>();
-	Out_Statement->Statement = MakeShared<odbc::PreparedStatementRef>(TempStatement);
-	Out_Statement->Connection = MakeShared< odbc::ConnectionRef>(this->Connection);
-
-	Out_Code = "Statement successfully created !";
-	return true;
-}
-
-// STATEMENT.
-
-void USAP_ODBC_Statement::SetInt(int32 Value, int32 ParamIndex)
-{
-	if (!this->Statement.IsValid())
-	{
-		return;
-	}
-
-	if (this->Statement->isNull())
-	{
-		return;
-	}
-
-	this->Statement->get()->setInt(ParamIndex, Value);
-}
-
-void USAP_ODBC_Statement::SetString(FString Value, int32 ParamIndex)
-{
-	if (!this->Statement.IsValid())
-	{
-		return;
-	}
-
-	if (this->Statement->isNull())
-	{
-		return;
-	}
-
-	this->Statement->get()->setCString(ParamIndex, TCHAR_TO_UTF8(*Value));
-}
-
-void USAP_ODBC_Statement::AddBatch()
-{
-	if (!this->Statement.IsValid())
-	{
-		return;
-	}
-
-	if (this->Statement->isNull())
-	{
-		return;
-	}
-
-	this->Statement->get()->addBatch();
-}
-
-void USAP_ODBC_Statement::ExecuteBatch(FString& Out_Code)
-{
-	if (!this->Statement.IsValid())
-	{
-		return;
-	}
-
-	if (this->Statement->isNull())
-	{
-		return;
-	}
-
-	try
-	{
-		this->Statement->get()->executeBatch();
-	}
-
-	catch (const std::exception& Exception)
-	{
-		Out_Code = Exception.what();
-	}
-}
-
-bool USAP_ODBC_Statement::CommitStatement(FString& Out_Code)
-{
-	if (!this->Connection.IsValid())
-	{
-		Out_Code = "Connection pointer is not valid !";
-		return false;
-	}
-
-	if (this->Connection->isNull())
-	{
-		Out_Code = "Connection reference is NULL !";
-		return false;
-	}
-
-	if (!this->Connection->get()->isValid())
-	{
-		Out_Code = "Connection reference is not valid !";
-		return false;
-	}
-
-	if (!this->Connection->get()->connected())
-	{
-		Out_Code = "There is no active connection !";
-		return false;
-	}
-
-	this->Connection->get()->commit();
-
-	Out_Code = "Statement successfully commited !";
-	return true;
-}
-
-bool USAP_ODBC_Statement::ExecuteQuery(FString& Out_Code, USAP_ODBC_Result*& Out_Result)
-{
-	if (!this->Statement.IsValid())
-	{
-		return false;
-	}
-
-	if (this->Statement->isNull())
-	{
-		return false;;
-	}
-
-	odbc::ResultSetRef QueryResult;
-
-	try
-	{
-		QueryResult = this->Statement->get()->executeQuery();
-	}
-
-	catch (const std::exception& Exception)
-	{
-		Out_Code = Exception.what();
-		return false;
-	}
-
-	USAP_ODBC_Result* ResultObject = NewObject<USAP_ODBC_Result>();
-
-	if (!ResultObject->SetQueryResult(Out_Code, QueryResult))
-	{
-		return false;
-	}
-	
-	Out_Result = ResultObject;
-	return true;
-}
-
-// RESULT.
+#include "Objects/SAP_ODBC_Result.h"
 
 bool USAP_ODBC_Result::SetQueryResult(FString& Out_Code, odbc::ResultSetRef ResultReferance)
 {
@@ -295,7 +6,7 @@ bool USAP_ODBC_Result::SetQueryResult(FString& Out_Code, odbc::ResultSetRef Resu
 	{
 		return false;
 	}
-	
+
 	int32 Index_Row = 0;
 	TMap<FVector2D, FSAP_ODBC_DataValue> Temp_Data;
 
@@ -325,7 +36,7 @@ bool USAP_ODBC_Result::SetQueryResult(FString& Out_Code, odbc::ResultSetRef Resu
 					if (!TempInt.isNull())
 					{
 						EachData.ValInt32 = *TempInt;
-						EachData.ValueRepresentation = FString::FromInt(*TempInt);
+						EachData.Preview = FString::FromInt(*TempInt);
 					}
 				}
 
@@ -336,12 +47,12 @@ bool USAP_ODBC_Result::SetQueryResult(FString& Out_Code, odbc::ResultSetRef Resu
 					if (!TempDouble.isNull())
 					{
 						EachData.ValDouble = *TempDouble;
-						EachData.ValueRepresentation = FString::SanitizeFloat(*TempDouble);
+						EachData.Preview = FString::SanitizeFloat(*TempDouble);
 					}
 				}
 
 				// MSSQL's "time" dateType is an nvarchar, too.
-				if (DataType == -9 || DataType == -1 || DataType == -2 || DataType == -9 || DataType == -93)
+				if (DataType == -9 || DataType == -1)
 				{
 					odbc::String TempStringRaw = ResultReferance->getString(Index_Column);
 
@@ -349,36 +60,10 @@ bool USAP_ODBC_Result::SetQueryResult(FString& Out_Code, odbc::ResultSetRef Resu
 					{
 						FString TempString = UTF8_TO_TCHAR(TempStringRaw->c_str());
 						EachData.ValString = TempString;
-						EachData.ValueRepresentation = TempString;
+						EachData.Preview = TempString;
 					}
 				}
 
-				/*
-				if (DataType == -9 || DataType == -93)
-				{
-					odbc::Date Section_Date = ResultReferance->getDate(Index_Column);
-					odbc::Time Section_Time = ResultReferance->getTime(Index_Column);
-
-					if (!Section_Date.isNull() && !Section_Time.isNull())
-					{
-						FDateTime DateTime = UKismetMathLibrary::MakeDateTime(Section_Date->year(), Section_Date->month(), Section_Date->day(), Section_Time->hour(), Section_Time->minute(), Section_Time->second());
-						EachData.ValDateTime = DateTime;
-						EachData.ValueRepresentation = DateTime.ToString();
-					}
-				}
-
-				if (DataType == -2)
-				{
-					odbc::Timestamp TimeStamp = ResultReferance->getTimestamp(Index_Column);
-
-					if (!TimeStamp.isNull())
-					{
-						FDateTime DateTime = UKismetMathLibrary::MakeDateTime(TimeStamp->year(), TimeStamp->month(), TimeStamp->day(), TimeStamp->hour(), TimeStamp->minute(), TimeStamp->second(), TimeStamp->milliseconds());
-						EachData.ValDateTime = DateTime;
-						EachData.ValueRepresentation = DateTime.ToString();
-					}
-				}
-				*/
 				Temp_Data.Add(FVector2D(Index_Row, Index_Column_Raw), EachData);
 			}
 

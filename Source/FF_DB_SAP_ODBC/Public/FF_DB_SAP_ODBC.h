@@ -4,7 +4,7 @@
 
 #include "Modules/ModuleManager.h"
 
-class FFF_DB_SAPODBCModule : public IModuleInterface
+class FFF_DB_SAP_ODBCModule : public IModuleInterface
 {
 public:
 

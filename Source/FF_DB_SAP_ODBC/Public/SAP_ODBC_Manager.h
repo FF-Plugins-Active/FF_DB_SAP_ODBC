@@ -5,13 +5,13 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 
-#include "SAP_ODBC_Thread.h"
-#include "SAP_ODBC_Connection.h"
+#include "Objects/SAP_ODBC_Thread.h"
+#include "Objects/SAP_ODBC_Connection.h"
 
 #include "SAP_ODBC_Manager.generated.h"
 
 UCLASS()
-class FF_DB_SAPODBC_API ASAP_ODBC_Manager : public AActor
+class FF_DB_SAP_ODBC_API ASAP_ODBC_Manager : public AActor
 {
 	GENERATED_BODY()
 	
