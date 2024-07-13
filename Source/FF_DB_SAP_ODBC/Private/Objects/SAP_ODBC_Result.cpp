@@ -163,7 +163,7 @@ bool USAP_ODBC_Result::SetQueryResult(FString& Out_Code, odbc::ResultSetRef Resu
 		}
 	}
 
-	catch (const std::exception& Exception)
+	catch (const odbc::Exception& Exception)
 	{
 		Out_Code = Exception.what();
 		return false;
@@ -210,7 +210,7 @@ bool USAP_ODBC_Result::GetMetaData(FString& Out_Code, FSAP_ODBC_MetaData& Out_Me
 		Result = this->QueryResult->getMetaData().get();
 	}
 
-	catch (const std::exception& Exception)
+	catch (const odbc::Exception& Exception)
 	{
 		Out_Code = (FString)"FF SAP ODBC : " + Exception.what();
 		return false;
@@ -278,7 +278,7 @@ bool USAP_ODBC_Result::GetDataFromRow(FString& Out_Code, TArray<FSAP_ODBC_DataVa
 		Out_Value = Temp_Array;
 	}
 
-	catch (const std::exception& Exception)
+	catch (const odbc::Exception& Exception)
 	{
 		Out_Code = Exception.what();
 		return false;

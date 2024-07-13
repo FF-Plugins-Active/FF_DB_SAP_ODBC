@@ -61,7 +61,7 @@ bool USAP_ODBC_Connection::Connection_Start(FString& Out_Code, FString In_Server
 		bConnectionStatus = this->Connection->connected();
 	}
 	
-	catch (const std::exception& Exception)
+	catch (const odbc::Exception& Exception)
 	{
 		Out_Code = "FF SAP ODBC : Connection couldn't established !" + (FString)Exception.what();
 		return false;
@@ -146,9 +146,8 @@ bool USAP_ODBC_Connection::PrepareStatement(FString& Out_Code, USAP_ODBC_Stateme
 		Out_Statement->Connection = this->Connection;
 	}
 
-	catch (const std::exception& Exception)
+	catch (const odbc::Exception& Exception)
 	{
-		//FString ExceptionString = Exception.what();
 		Out_Code = (FString)"FF SAP ODBC : " + Exception.what();
 		return false;
 	}

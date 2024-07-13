@@ -42,7 +42,7 @@ void USAP_ODBC_Statement::ExecuteBatch(FString& Out_Code)
 		this->Statement->executeBatch();
 	}
 
-	catch (const std::exception& Exception)
+	catch (const odbc::Exception& Exception)
 	{
 		Out_Code = Exception.what();
 	}
@@ -89,7 +89,7 @@ bool USAP_ODBC_Statement::ExecuteQuery(FString& Out_Code, USAP_ODBC_Result*& Out
 		QueryResult = this->Statement->executeQuery();
 	}
 
-	catch (const std::exception& Exception)
+	catch (const odbc::Exception& Exception)
 	{
 		Out_Code = Exception.what();
 		return false;
