@@ -30,11 +30,38 @@ void USAP_ODBC_Statement::AddBatch()
 	this->Statement->addBatch();
 }
 
-void USAP_ODBC_Statement::ExecuteBatch(FString& Out_Code)
+bool USAP_ODBC_Statement::CommitStatement(FString& Out_Code)
+{
+	if (this->Connection.isNull())
+	{
+		Out_Code = "FF DB SAP ODBC :  Connection reference is NULL !";
+		return false;
+	}
+
+	if (!this->Connection->isValid())
+	{
+		Out_Code = "FF DB SAP ODBC : Connection reference is not valid !";
+		return false;
+	}
+
+	if (!this->Connection->connected())
+	{
+		Out_Code = "FF DB SAP ODBC : There is no active connection !";
+		return false;
+	}
+
+	this->Connection->commit();
+
+	Out_Code = "FF DB SAP ODBC : Statement successfully commited !";
+	return true;
+}
+
+bool USAP_ODBC_Statement::ExecuteBatch(FString& Out_Code)
 {
 	if (this->Statement.isNull())
 	{
-		return;
+		Out_Code = "FF DB SAP ODBC : Statement object is null !";
+		return false;
 	}
 
 	try
@@ -45,40 +72,17 @@ void USAP_ODBC_Statement::ExecuteBatch(FString& Out_Code)
 	catch (const odbc::Exception& Exception)
 	{
 		Out_Code = Exception.what();
-	}
-}
-
-bool USAP_ODBC_Statement::CommitStatement(FString& Out_Code)
-{
-	if (this->Connection.isNull())
-	{
-		Out_Code = "FF SAP ODBC :  Connection reference is NULL !";
 		return false;
 	}
 
-	if (!this->Connection->isValid())
-	{
-		Out_Code = "FF SAP ODBC : Connection reference is not valid !";
-		return false;
-	}
-
-	if (!this->Connection->connected())
-	{
-		Out_Code = "FF SAP ODBC : There is no active connection !";
-		return false;
-	}
-
-	this->Connection->commit();
-
-	Out_Code = "FF SAP ODBC : Statement successfully commited !";
 	return true;
 }
 
-bool USAP_ODBC_Statement::ExecuteQuery(FString& Out_Code, USAP_ODBC_Result*& Out_Result)
+bool USAP_ODBC_Statement::ExecuteQuery(FString& Out_Code, USAP_ODBC_Result*& Out_Result, bool bRecordResult)
 {
 	if (this->Statement.isNull())
 	{
-		Out_Code = "FF SAP ODBC : Statement object is null !";
+		Out_Code = "FF DB SAP ODBC : Statement object is null !";
 		return false;;
 	}
 
@@ -102,6 +106,40 @@ bool USAP_ODBC_Statement::ExecuteQuery(FString& Out_Code, USAP_ODBC_Result*& Out
 		return false;
 	}
 
+	if (bRecordResult)
+	{
+		if (!ResultObject->Result_Record(Out_Code))
+		{
+			return false;
+		}
+	}
+
 	Out_Result = ResultObject;
+	return true;
+}
+
+bool USAP_ODBC_Statement::ExecuteUpdate(FString& Out_Code, int32& Affected_Rows)
+{
+	if (this->Statement.isNull())
+	{
+		Out_Code = "FF DB SAP ODBC : Statement object is null !";
+		return false;;
+	}
+
+	odbc::ResultSetRef QueryResult;
+	int32 Temp_Affected_Rows = 0;
+
+	try
+	{
+		Temp_Affected_Rows = (int32)this->Statement->executeUpdate();
+	}
+
+	catch (const odbc::Exception& Exception)
+	{
+		Out_Code = Exception.what();
+		return false;
+	}
+
+	Affected_Rows = Temp_Affected_Rows;
 	return true;
 }

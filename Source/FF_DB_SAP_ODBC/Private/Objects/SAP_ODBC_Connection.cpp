@@ -42,13 +42,13 @@ bool USAP_ODBC_Connection::Connection_Start(FString& Out_Code, FString In_Server
 {
 	if (this->Connection.isNull())
 	{
-		Out_Code = "FF SAP ODBC : Connection referance is null !";
+		Out_Code = "FF DB SAP ODBC : Connection referance is null !";
 		return false;
 	}
 
 	if (this->Connection->connected() && this->Connection->isValid())
 	{
-		Out_Code = "FF SAP ODBC : There is an already active connection !";
+		Out_Code = "FF DB SAP ODBC : There is an already active connection !";
 		return false;
 	}
 
@@ -63,11 +63,11 @@ bool USAP_ODBC_Connection::Connection_Start(FString& Out_Code, FString In_Server
 	
 	catch (const odbc::Exception& Exception)
 	{
-		Out_Code = "FF SAP ODBC : Connection couldn't established !" + (FString)Exception.what();
+		Out_Code = "FF DB SAP ODBC : Connection couldn't established !" + (FString)Exception.what();
 		return false;
 	}
 
-	Out_Code  = bConnectionStatus ? "FF SAP ODBC : Connection successfully started." : "FF SAP ODBC : Connection couldn't established !";
+	Out_Code  = bConnectionStatus ? "FF DB SAP ODBC : Connection successfully started." : "FF DB SAP ODBC : Connection couldn't established !";
 	return bConnectionStatus;
 }
 
@@ -117,19 +117,19 @@ bool USAP_ODBC_Connection::PrepareStatement(FString& Out_Code, USAP_ODBC_Stateme
 	{
 		if (this->Connection.isNull())
 		{
-			Out_Code = "FF SAP ODBC : Connection reference is NULL !";
+			Out_Code = "FF DB SAP ODBC : Connection reference is NULL !";
 			return false;
 		}
 
 		if (!this->Connection->isValid())
 		{
-			Out_Code = "FF SAP ODBC : Connection reference is not valid !";
+			Out_Code = "FF DB SAP ODBC : Connection reference is not valid !";
 			return false;
 		}
 
 		if (!this->Connection->connected())
 		{
-			Out_Code = "FF SAP ODBC : There is no active connection !";
+			Out_Code = "FF DB SAP ODBC : There is no active connection !";
 			return false;
 		}
 
@@ -137,7 +137,7 @@ bool USAP_ODBC_Connection::PrepareStatement(FString& Out_Code, USAP_ODBC_Stateme
 
 		if (TempStatement.isNull())
 		{
-			Out_Code = "FF SAP ODBC : There is a problem while preparing statement !";
+			Out_Code = "FF DB SAP ODBC : There is a problem while preparing statement !";
 			return false;
 		}
 
@@ -148,10 +148,10 @@ bool USAP_ODBC_Connection::PrepareStatement(FString& Out_Code, USAP_ODBC_Stateme
 
 	catch (const odbc::Exception& Exception)
 	{
-		Out_Code = (FString)"FF SAP ODBC : " + Exception.what();
+		Out_Code = (FString)"FF DB SAP ODBC : " + Exception.what();
 		return false;
 	}
 
-	Out_Code = "FF SAP ODBC : Statement successfully created !";
+	Out_Code = "FF DB SAP ODBC : Statement successfully created !";
 	return true;
 }

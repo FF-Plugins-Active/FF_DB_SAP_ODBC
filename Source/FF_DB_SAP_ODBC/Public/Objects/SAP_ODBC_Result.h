@@ -126,31 +126,39 @@ class FF_DB_SAP_ODBC_API USAP_ODBC_Result : public UObject
 
 protected:
 
-	int32 RowCount = 0;
 	odbc::ResultSetRef QueryResult;
-	TMap<FVector2D, FSAP_ODBC_DataValue> All_Data;
+	TMap<FVector2D, FSAP_ODBC_DataValue> Data_Pool;
+
+	int32 Count_Row = 0;
+	int32 Count_Column = 0;
 
 public:
 
 	virtual bool SetQueryResult(FString& Out_Code, odbc::ResultSetRef ResultReferance);
 
+	UFUNCTION(BlueprintCallable)
+	virtual bool Result_Record(FString& Out_Code);
+
+	UFUNCTION(BlueprintCallable)
+	virtual bool Result_Fetch(FString& Out_Code, TArray<FSAP_ODBC_DataValue>& Out_Values, int32 Index_Column);
+
 	UFUNCTION(BlueprintPure)
 	virtual int32 GetColumnCount();
 
 	UFUNCTION(BlueprintPure)
-	virtual int32 GetRowCount(int32& LastIndex);
+	virtual int32 GetRowCount();
 
 	UFUNCTION(BlueprintCallable)
-	virtual bool GetMetaData(FString& Out_Code, FSAP_ODBC_MetaData& Out_MetaData, const int32 ColumnIndex = 1);
+	virtual bool GetMetaData(FString& Out_Code, FSAP_ODBC_MetaData& Out_MetaData, const int32 Index_Column = 1);
 
 	UFUNCTION(BlueprintCallable)
-	virtual bool GetDataFromRow(FString& Out_Code, TArray<FSAP_ODBC_DataValue>& Out_Value, const int32 RowIndex);
+	virtual bool GetRow(FString& Out_Code, TArray<FSAP_ODBC_DataValue>& Out_Value, const int32 Index_Row);
 
 	UFUNCTION(BlueprintCallable)
-	virtual bool GetDataFromColumnIndex(FString& Out_Code, TArray<FSAP_ODBC_DataValue>& Out_Value, const int32 ColumnIndex);
+	virtual bool GetColumnFromIndex(FString& Out_Code, TArray<FSAP_ODBC_DataValue>& Out_Value, const int32 Index_Column);
 
 	UFUNCTION(BlueprintCallable)
-	virtual bool GetDataFromColumnName(FString& Out_Code, TArray<FSAP_ODBC_DataValue>& Out_Value, const FString ColumnName);
+	virtual bool GetColumnFromName(FString& Out_Code, TArray<FSAP_ODBC_DataValue>& Out_Value, const FString ColumnName);
 
 	UFUNCTION(BlueprintCallable)
 	virtual bool GetSingleData(FString& Out_Code, FSAP_ODBC_DataValue& Out_Value, const FVector2D Position);

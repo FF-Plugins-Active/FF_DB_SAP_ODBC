@@ -27,12 +27,15 @@ public:
 	virtual void AddBatch();
 
 	UFUNCTION(BlueprintCallable)
-	virtual void ExecuteBatch(FString& Out_Code);
-
-	UFUNCTION(BlueprintCallable)
 	virtual bool CommitStatement(FString& Out_Code);
 
 	UFUNCTION(BlueprintCallable)
-	virtual bool ExecuteQuery(FString& Out_Code, USAP_ODBC_Result*& Out_Result);
+	virtual bool ExecuteBatch(FString& Out_Code);
+
+	UFUNCTION(BlueprintCallable, meta = (ToolTip = "This will return result."))
+	virtual bool ExecuteQuery(FString& Out_Code, USAP_ODBC_Result*& Out_Result, bool bRecordResult);
+
+	UFUNCTION(BlueprintCallable, meta = (ToolTip = "This will NOT return a result because it is just for update, insert and delete. It will return affected rows count."))
+	virtual bool ExecuteUpdate(FString& Out_Code, int32& Affected_Rows);
 
 };
