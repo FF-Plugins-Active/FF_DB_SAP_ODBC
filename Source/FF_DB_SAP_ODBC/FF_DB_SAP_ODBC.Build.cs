@@ -9,6 +9,7 @@ public class FF_DB_SAP_ODBC : ModuleRules
 	public FF_DB_SAP_ODBC(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+        bEnableExceptions = true;
 
         if (UnrealTargetPlatform.Win64 == Target.Platform)
         {
