@@ -26,7 +26,6 @@ public class FF_DB_SAP_ODBC : ModuleRules
                 "Json",
                 "JsonUtilities",
                 "JsonBlueprintUtilities",
-				 // ... add other public dependencies that you statically link with here ...
 			}
 			);
 
@@ -37,15 +36,14 @@ public class FF_DB_SAP_ODBC : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
-				"Projects",
-				// ... add private dependencies that you statically link with here ...	
+				"Projects",	
 			}
 			);
 		
 		DynamicallyLoadedModuleNames.AddRange(
 			new string[]
 			{
-				// ... add any modules that your module loads dynamically here ...
+
 			}
 			);
 	}
