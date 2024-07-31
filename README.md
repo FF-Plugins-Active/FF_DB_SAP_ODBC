@@ -6,5 +6,8 @@ Library is not related with SAP/HANA products but it has been created by same co
 https://github.com/SAP/odbc-cpp-wrapper
 
 # INSTRUCTIONS
-Add this to ``Projec's Source/ProjectName/ProjectName.build.cs`` </br>
-``bEnableExceptions = true;``
+Add this to 
+```
+Project/Source/ProjectName/ProjectName.build.cs
+bEnableExceptions = true;
+```
