@@ -30,7 +30,7 @@ public:
 	// Sets default values for this actor's properties.
 	ASAP_ODBC_Manager();
 
-	// Called every frame
+	// Called every frame.
 	virtual void Tick(float DeltaTime) override;
 
 	UFUNCTION(BlueprintCallable)

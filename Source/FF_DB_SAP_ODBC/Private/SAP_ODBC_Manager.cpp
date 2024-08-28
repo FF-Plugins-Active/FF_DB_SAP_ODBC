@@ -9,18 +9,19 @@ ASAP_ODBC_Manager::ASAP_ODBC_Manager()
 	PrimaryActorTick.bCanEverTick = true;
 }
 
-// Called when the game starts or when spawned
+// Called when the game starts or when spawned.
 void ASAP_ODBC_Manager::BeginPlay()
 {
 	Super::BeginPlay();
 }
 
+// Called when the game end or when destroyed.
 void ASAP_ODBC_Manager::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	Super::EndPlay(EndPlayReason);
 }
 
-// Called every frame
+// Called every frame.
 void ASAP_ODBC_Manager::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
