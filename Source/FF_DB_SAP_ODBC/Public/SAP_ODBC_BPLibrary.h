@@ -18,7 +18,7 @@ class USAP_ODBC_BPLibrary : public UBlueprintFunctionLibrary
 	static FString InsertInto(FString Target, TSet<FString> Placeholders);
 
 	UFUNCTION(BlueprintPure, meta = (DisplayName = "SAP ODBC - SELECT FROM", Keywords = "odbc, sap, statement, template, insert, into"), Category = "Frozen Forest|Database|SAP ODBC")
-	static FString SelectFrom(FString Target, FString Where, TSet<FString> Placeholders);
+	static FString SelectFrom(FString Target, FString Where, TSet<FString> PlaceHolders);
 
 	UFUNCTION(BlueprintPure, meta = (DisplayName = "SAP ODBC - Print MetaData", Keywords = "odbc, sap, print, metadata"), Category = "Frozen Forest|Database|SAP ODBC")
 	static FJsonObjectWrapper PrintMetaData(FSAP_ODBC_MetaData In_MetaData);

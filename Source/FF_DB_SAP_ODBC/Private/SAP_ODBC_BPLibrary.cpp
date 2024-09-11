@@ -37,9 +37,13 @@ FString USAP_ODBC_BPLibrary::InsertInto(FString Target, TSet<FString> Placeholde
 	return MainStatement;
 }
 
-FString USAP_ODBC_BPLibrary::SelectFrom(FString Target, FString Where, TSet<FString> Placeholders)
+FString USAP_ODBC_BPLibrary::SelectFrom(FString Target, FString Where, TSet<FString> PlaceHolders)
 {
-	return FString();
+	TArray<FString> Array_PlaceHolders = PlaceHolders.Array();
+	const FString PlaceHolderString = " " + UKismetStringLibrary::JoinStringArray(Array_PlaceHolders, ", ") + " ";
+	const FString MainQuery = "SELECT" + PlaceHolderString + "FROM " + Target + " " + "WHERE " + Where;
+
+	return MainQuery;
 }
 
 FJsonObjectWrapper USAP_ODBC_BPLibrary::PrintMetaData(FSAP_ODBC_MetaData In_MetaData)

@@ -186,7 +186,170 @@ bool USAP_ODBC_Result::Result_Record(FString& Out_Code)
 
 bool USAP_ODBC_Result::Result_Fetch(FString& Out_Code, TArray<FSAP_ODBC_DataValue>& Out_Values, int32 Index_Column)
 {
-	return false;
+	if (Index_Column <= 0)
+	{
+		Out_Code = "Column index should start from 1 for SAP ODBC.";
+	}
+
+	int32 Index_Row = 0;
+
+	try
+	{
+		TArray<FSAP_ODBC_DataValue> TempValues;
+
+		while (this->QueryResult->next())
+		{
+			const int32 DataType = this->QueryResult->getMetaData()->getColumnType(Index_Column);
+			const FString DataTypeName = UTF8_TO_TCHAR(this->QueryResult->getMetaData()->getColumnTypeName(Index_Column).c_str());
+			const FString ColumnName = UTF8_TO_TCHAR(this->QueryResult->getMetaData()->getColumnName(Index_Column).c_str());
+
+			FSAP_ODBC_DataValue EachData;
+			EachData.DataType = DataType;
+			EachData.DataTypeName = DataTypeName;
+			EachData.ColumnName = ColumnName;
+
+			switch (DataType)
+			{
+				case -9:
+				{
+					// NVARCHAR & DATE & TIME
+
+					odbc::String TempStringRaw = this->QueryResult->getString(Index_Column);
+
+					if (!TempStringRaw.isNull())
+					{
+						FString TempString = UTF8_TO_TCHAR(TempStringRaw->c_str());
+						EachData.String = TempString;
+						EachData.Preview = TempString;
+					}
+
+					break;
+				}
+
+				case -5:
+				{
+					// INT64 & BIGINT
+
+					odbc::Long TempLong = this->QueryResult->getLong(Index_Column);
+
+					if (!TempLong.isNull())
+					{
+						EachData.Integer64 = *TempLong;
+						EachData.Preview = FString::FromInt(EachData.Integer64);
+					}
+
+					break;
+				}
+
+				case -2:
+				{
+					// TIMESTAMP: odbc::timestamp is not SQL timestamp. We use it to check if rows changed since last retriving or not.
+
+					odbc::String RawString = this->QueryResult->getString(Index_Column);
+
+					if (!RawString.isNull())
+					{
+						std::string TimeStampString = RawString->c_str();
+						unsigned int TimeStampInt = std::stoul(TimeStampString, nullptr, 16);
+
+						EachData.Integer64 = TimeStampInt;
+						EachData.Preview = (FString)TimeStampString.c_str() + " - " + FString::FromInt(TimeStampInt);
+					}
+
+					break;
+				}
+
+				case -1:
+				{
+					// TEXT
+
+					odbc::String TempStringRaw = this->QueryResult->getString(Index_Column);
+
+					if (!TempStringRaw.isNull())
+					{
+						FString TempString = UTF8_TO_TCHAR(TempStringRaw->c_str());
+						EachData.String = TempString;
+						EachData.Preview = TempString;
+					}
+
+					break;
+				}
+
+				case 4:
+				{
+					// INT32
+
+					odbc::Int TempInt = this->QueryResult->getInt(Index_Column);
+
+					if (!TempInt.isNull())
+					{
+						EachData.Integer32 = *TempInt;
+						EachData.Preview = FString::FromInt(*TempInt);
+					}
+
+					break;
+				}
+
+				case 6:
+				{
+					// FLOAT & DOUBLE
+
+					odbc::Double TempDouble = this->QueryResult->getDouble(Index_Column);
+
+					if (!TempDouble.isNull())
+					{
+						EachData.Double = *TempDouble;
+						EachData.Preview = FString::SanitizeFloat(*TempDouble);
+					}
+
+					break;
+				}
+
+				case 9:
+				{
+					// DATETIME : SAP ODBC gives "9" as datatype of DateTime.
+
+					odbc::Timestamp TempDateTime = this->QueryResult->getTimestamp(Index_Column);
+
+					if (!TempDateTime.isNull())
+					{
+						int32 Year = TempDateTime->year();
+						int32 Month = TempDateTime->month();
+						int32 Day = TempDateTime->day();
+						int32 Hours = TempDateTime->hour();
+						int32 Minutes = TempDateTime->minute();
+						int32 Seconds = TempDateTime->second();
+						int32 Milliseconds = TempDateTime->milliseconds();
+
+						EachData.DateTime = FDateTime(Year, Month, Day, Hours, Minutes, Seconds, Milliseconds);
+						EachData.Preview = FString::Printf(TEXT("%d-%d-%d %d:%d:%d:%d"), Year, Month, Day, Hours, Minutes, Seconds, Milliseconds);
+					}
+
+					break;
+				}
+
+				default:
+				{
+					EachData.Note = "Currently there is no parser for this data type. Please convert it to another known type in your query !";
+					break;
+				}
+			}
+
+			Index_Row += 1;
+			TempValues.Add(EachData);
+		}
+
+		this->Count_Row = Index_Row;
+		Out_Values = TempValues;
+	}
+
+	catch (const odbc::Exception& Exception)
+	{
+		Out_Code = Exception.what();
+		return false;
+	}
+
+	return true;
 }
 
 int32 USAP_ODBC_Result::GetColumnCount()
